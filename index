@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a0a0a">
-<title>Atelier Vidéo — Vos images en mouvement</title>
+<title>Atelier Vidéo — PSG 2026/27 Edition</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     :root {
         --bg: #fafafa; --panel: #ffffff; --panel-2: #f5f5f5; --border: #e5e5e5;
         --ink: #1a1a1a; --ink-dim: #777; --ink-faint: #aaa;
         --success: #2d8a4e; --error: #c0392b; --warn: #d4a017; --info: #4a6cf7;
+        --psg-blue: #004170; --psg-red: #DA291C;
         --radius: 12px;
     }
     body {
@@ -33,11 +33,13 @@
         z-index: 1000; opacity: 0;
         transition: transform 0.35s ease, opacity 0.35s ease;
         max-width: 90vw; text-align: center;
+        display: flex; align-items: center; gap: 0.5rem;
     }
     .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
     .toast.success { background: var(--success); }
     .toast.error { background: var(--error); }
     .toast.warn { background: var(--warn); }
+    .toast .toast-icon { font-size: 1rem; }
 
     .info-banner {
         background: #eef4ff; border-left: 3px solid var(--info);
@@ -45,10 +47,22 @@
         font-size: 0.78rem; color: #2a3a5c;
         margin-bottom: 1rem; line-height: 1.45;
     }
+    .info-banner strong { color: #1a1a1a; }
+    .psg-banner {
+        background: linear-gradient(135deg, #004170 0%, #DA291C 100%);
+        color: #fff; border-radius: 10px; padding: 0.9rem 1rem;
+        margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5;
+        display: flex; align-items: center; gap: 0.7rem;
+    }
+    .psg-banner .psg-logo {
+        font-size: 1.8rem; flex-shrink: 0;
+    }
+    .psg-banner .psg-text strong { font-size: 0.85rem; }
 
     .section {
         background: var(--panel); border: 1px solid var(--border);
-        border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden;
+        border-radius: var(--radius); margin-bottom: 1rem;
+        overflow: hidden;
     }
     .section-header {
         padding: 0.9rem 1.1rem; cursor: pointer; user-select: none;
@@ -59,7 +73,16 @@
         font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
         color: var(--ink-dim); font-weight: 600;
     }
-    .section-header .chevron { font-size: 0.7rem; color: var(--ink-faint); transition: transform 0.2s; }
+    .section-title .badge {
+        display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.4rem;
+        background: var(--ink); color: #fff; border-radius: 10px;
+        font-size: 0.65rem; letter-spacing: 0;
+    }
+    .section-title .badge.soft { background: var(--info); color: #fff; }
+    .section-title .badge.psg { background: linear-gradient(90deg, #004170, #DA291C); }
+    .section-header .chevron {
+        font-size: 0.7rem; color: var(--ink-faint); transition: transform 0.2s;
+    }
     .section.open .section-header .chevron { transform: rotate(180deg); }
     .section-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
     .section.open .section-body { max-height: 4000px; }
@@ -67,38 +90,82 @@
 
     .api-panel {
         background: var(--panel); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1rem;
+        border-radius: var(--radius); padding: 1rem 1.2rem;
+        margin-bottom: 1rem; transition: border-color 0.3s;
     }
+    .api-panel.ok { border-color: var(--success); }
+
     .api-key-input {
-        width: 100%; padding: 0.85rem 1rem; border-radius: 8px;
-        border: 1px solid var(--border); background: #fafafa; color: var(--ink);
-        font-family: ui-monospace, monospace; font-size: 0.85rem; margin-bottom: 0.6rem;
+        width: 100%; padding: 0.85rem 1rem;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: #fafafa; color: var(--ink);
+        font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+        font-size: 0.85rem; margin-bottom: 0.6rem;
     }
     .api-key-input:focus { outline: none; border-color: var(--ink); }
+
     .api-save-btn {
-        width: 100%; padding: 0.9rem; border-radius: 8px; border: none;
-        background: var(--ink); color: #fff; font-size: 0.9rem; font-weight: 600;
-        font-family: inherit; cursor: pointer; margin-bottom: 0.6rem;
-        touch-action: manipulation; -webkit-user-select: none; user-select: none;
+        width: 100%; padding: 0.8rem 1.2rem;
+        border-radius: 8px; border: none;
+        background: var(--ink); color: #fff;
+        font-size: 0.9rem; font-weight: 600; font-family: inherit;
+        cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+        margin-bottom: 0.6rem;
     }
-    .api-save-btn:active { opacity: 0.7; transform: scale(0.98); }
+    .api-save-btn:active { transform: scale(0.98); }
+
     .api-status-line {
-        font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;
+        font-size: 0.75rem; padding: 0.55rem 0.85rem;
+        border-radius: 6px; margin-bottom: 0.5rem;
+        display: flex; align-items: center; gap: 0.5rem;
         background: var(--panel-2); color: var(--ink-dim);
+        transition: all 0.3s;
     }
-    .api-status-line.ok { background: #e3f5e9; color: var(--success); font-weight: 600; }
+    .api-status-line.ok {
+        background: #e3f5e9; color: var(--success); font-weight: 600;
+    }
+    .api-status-line .status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--ink-faint); flex-shrink: 0;
+        transition: background 0.3s;
+    }
+    .api-status-line.ok .status-dot { background: var(--success); }
+
     .api-hint { font-size: 0.72rem; color: var(--ink-dim); margin-top: 0.4rem; }
-    .api-hint a { color: var(--ink); }
+    .api-hint a { color: var(--ink); text-decoration: underline; }
+    .stat-line {
+        font-size: 0.72rem; color: var(--ink-dim); margin-top: 0.5rem;
+        padding: 0.4rem 0.6rem; background: var(--panel-2); border-radius: 6px;
+        display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem;
+    }
+
+    .wake-status {
+        font-size: 0.72rem; padding: 0.5rem 0.7rem;
+        border-radius: 6px; margin-top: 0.4rem;
+        display: flex; justify-content: space-between; align-items: center;
+        background: #eef4ff; color: var(--info);
+        flex-wrap: wrap; gap: 0.4rem;
+    }
+    .wake-status.active { background: #e3f5e9; color: var(--success); }
+    .wake-status.warn { background: #fdf5e3; color: var(--warn); }
+    .wake-status button {
+        background: transparent; border: 1px solid currentColor;
+        color: inherit; padding: 0.25rem 0.6rem; border-radius: 6px;
+        font-size: 0.68rem; cursor: pointer; font-family: inherit;
+    }
+    .wake-status button:active { opacity: 0.6; }
 
     .upload-zone {
         border: 2px dashed var(--border); border-radius: var(--radius);
         padding: 2rem 1rem; text-align: center; cursor: pointer;
-        margin-bottom: 1rem; background: var(--panel);
+        transition: border-color 0.2s, background 0.2s; margin-bottom: 1rem;
+        background: var(--panel);
     }
-    .upload-zone:active { border-color: var(--ink); }
+    .upload-zone:active { border-color: var(--ink); background: #f5f5f5; }
+    .upload-zone.loading { pointer-events: none; opacity: 0.6; }
     .upload-zone input[type="file"] { display: none; }
     .upload-icon { font-size: 2.2rem; margin-bottom: 0.6rem; opacity: 0.6; }
-    .upload-text { font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .upload-text { font-size: 0.95rem; color: var(--ink); margin-bottom: 0.2rem; }
     .upload-hint { font-size: 0.75rem; color: var(--ink-dim); }
 
     .images-grid {
@@ -107,28 +174,56 @@
     }
     .image-card {
         position: relative; border-radius: 8px; overflow: hidden;
-        border: 1px solid var(--border); background: #f0f0f0; aspect-ratio: 9/16;
+        border: 1px solid var(--border); background: #f0f0f0;
+        aspect-ratio: 9/16;
     }
     .image-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .image-card .remove-btn {
         position: absolute; top: 4px; right: 4px;
         background: rgba(0,0,0,0.65); color: #fff; border: none;
-        width: 24px; height: 24px; border-radius: 50%; font-size: 12px; cursor: pointer;
+        width: 22px; height: 22px; border-radius: 50%; font-size: 11px;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        line-height: 1;
     }
 
+    textarea {
+        width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px;
+        border: 1px solid var(--border); background: #fafafa;
+        color: var(--ink); font-family: inherit; font-size: 0.88rem;
+        min-height: 80px; resize: vertical;
+    }
+    textarea:focus { outline: none; border-color: var(--ink); }
+
     .prompt-main {
-        width: 100%; padding: 0.85rem 1rem; border-radius: 8px;
-        border: 1px solid var(--border); background: #fafafa; color: var(--ink);
-        font-family: inherit; font-size: 0.9rem; min-height: 110px; resize: vertical;
+        width: 100%; padding: 0.85rem 1rem;
+        border-radius: 8px; border: 1px solid var(--border);
+        background: #fafafa; color: var(--ink);
+        font-family: inherit; font-size: 0.9rem;
+        min-height: 110px; resize: vertical; line-height: 1.5;
     }
     .prompt-main:focus { outline: none; border-color: var(--ink); }
-    .prompt-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+    .prompt-main-hint {
+        font-size: 0.72rem; color: var(--ink-dim);
+        margin-top: 0.5rem; line-height: 1.4;
+    }
+
+    .prompt-presets {
+        display: flex; flex-wrap: wrap; gap: 0.4rem;
+        margin-top: 0.7rem;
+    }
     .prompt-preset {
         padding: 0.35rem 0.7rem; border-radius: 16px;
         border: 1px solid var(--border); background: var(--panel-2);
         font-size: 0.72rem; cursor: pointer;
+        transition: all 0.15s; user-select: none;
     }
     .prompt-preset:active { transform: scale(0.96); }
+    .prompt-preset:hover { border-color: var(--ink); }
+    .prompt-preset.psg {
+        border-color: var(--psg-blue);
+        background: linear-gradient(135deg, #e8f0f8, #fce8e6);
+        font-weight: 500;
+    }
 
     .styles-grid {
         display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -137,45 +232,69 @@
     .style-card {
         padding: 0.75rem 0.85rem; border-radius: 8px;
         border: 1px solid var(--border); background: var(--panel-2);
-        cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+        cursor: pointer; transition: all 0.15s;
+        display: flex; align-items: center; gap: 0.5rem;
     }
     .style-card:active { transform: scale(0.98); }
     .style-card.selected { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .style-card.selected.psg-card { background: linear-gradient(135deg, #004170, #DA291C); border-color: #004170; }
     .style-card .style-emoji { font-size: 1.2rem; flex-shrink: 0; }
     .style-card .style-name { font-size: 0.8rem; font-weight: 500; line-height: 1.2; }
-    .style-card .style-desc { font-size: 0.65rem; opacity: 0.65; margin-top: 0.1rem; }
+    .style-card .style-desc { font-size: 0.65rem; opacity: 0.65; margin-top: 0.1rem; line-height: 1.2; }
+
     .style-category-header {
-        grid-column: 1 / -1; font-size: 0.7rem; font-weight: 600;
-        color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em;
-        padding: 0.6rem 0 0.3rem; border-bottom: 1px solid var(--border); margin-bottom: 0.3rem;
+        grid-column: 1 / -1;
+        font-size: 0.7rem; font-weight: 600;
+        color: var(--ink-dim); text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0.6rem 0 0.3rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 0.3rem;
     }
     .style-category-header:first-child { padding-top: 0; border-bottom: none; }
-    .style-category-desc {
-        grid-column: 1 / -1; font-size: 0.68rem; color: var(--ink-dim);
-        font-style: italic; margin-bottom: 0.4rem;
+    .style-category-header.psg {
+        color: #004170;
+        border-bottom: 2px solid;
+        border-image: linear-gradient(90deg, #004170, #DA291C) 1;
     }
+    .style-category-desc {
+        grid-column: 1 / -1;
+        font-size: 0.68rem; color: var(--ink-dim);
+        font-style: italic; margin-bottom: 0.4rem; line-height: 1.35;
+    }
+
     .no-style-card {
-        grid-column: 1 / -1; padding: 0.8rem 1rem; border-radius: 8px;
-        border: 2px dashed var(--border); background: transparent;
+        grid-column: 1 / -1;
+        padding: 0.8rem 1rem;
+        border-radius: 8px;
+        border: 2px dashed var(--border);
+        background: transparent;
         text-align: center; cursor: pointer;
+        transition: all 0.15s;
         font-size: 0.82rem; color: var(--ink-dim);
     }
+    .no-style-card:active { transform: scale(0.99); }
     .no-style-card.selected {
         border-color: var(--ink); border-style: solid;
         background: var(--panel-2); color: var(--ink); font-weight: 600;
     }
 
     .control-row { margin-bottom: 0.9rem; }
+    .control-row:last-child { margin-bottom: 0; }
     .control-label {
         display: block; font-size: 0.72rem; color: var(--ink-dim);
-        margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+        margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em;
+        font-weight: 600;
     }
     select {
         width: 100%; padding: 0.7rem 0.9rem; border-radius: 8px;
-        border: 1px solid var(--border); background: #fafafa; color: var(--ink);
-        font-family: inherit; font-size: 0.88rem; -webkit-appearance: none; appearance: none;
+        border: 1px solid var(--border); background: #fafafa;
+        color: var(--ink); font-family: inherit; font-size: 0.88rem;
+        -webkit-appearance: none; appearance: none;
         background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%231a1a1a' d='M0 0l5 6 5-6z'/></svg>");
-        background-repeat: no-repeat; background-position: right 0.9rem center; background-size: 10px;
+        background-repeat: no-repeat;
+        background-position: right 0.9rem center;
+        background-size: 10px;
     }
     select:focus { outline: none; border-color: var(--ink); }
 
@@ -183,17 +302,21 @@
         width: 100%; padding: 1.1rem; border-radius: var(--radius);
         border: none; background: var(--ink); color: #fff;
         font-size: 1rem; font-weight: 600; font-family: inherit;
-        cursor: pointer; margin-bottom: 1rem;
-        touch-action: manipulation;
+        cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+        margin-bottom: 1rem;
     }
     .btn-primary:active:not(:disabled) { transform: scale(0.98); }
     .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-primary.psg-ready {
+        background: linear-gradient(135deg, #004170 0%, #DA291C 100%);
+    }
 
     .btn-stop {
         width: 100%; padding: 0.8rem; border-radius: var(--radius);
         border: 1px solid var(--border); background: var(--panel);
         color: var(--error); font-size: 0.85rem; font-weight: 600;
-        font-family: inherit; cursor: pointer; margin-bottom: 1rem; display: none;
+        font-family: inherit; cursor: pointer; margin-bottom: 1rem;
+        display: none;
     }
     .btn-stop.visible { display: block; }
 
@@ -202,36 +325,54 @@
         background: var(--panel); border: 1px solid var(--border);
         border-radius: 8px; padding: 0.7rem 0.9rem; margin-bottom: 0.6rem;
         font-size: 0.78rem; display: flex; justify-content: space-between;
+        align-items: center; flex-wrap: wrap; gap: 0.4rem;
     }
+    .queue-summary .progress-text { color: var(--ink); font-weight: 600; }
+    .queue-summary .eta-text { color: var(--ink-dim); }
+
     .queue-item {
         display: flex; align-items: center; gap: 0.8rem;
         padding: 0.7rem 0.8rem; border-radius: 8px;
         border: 1px solid var(--border); margin-bottom: 0.4rem;
-        background: var(--panel); font-size: 0.82rem;
+        background: var(--panel); transition: border-color 0.3s, opacity 0.3s;
+        font-size: 0.82rem;
     }
     .queue-item.pending { opacity: 0.5; }
+    .queue-item.creating { border-color: var(--warn); }
     .queue-item.processing { border-color: var(--ink); }
     .queue-item.done { border-color: var(--success); }
     .queue-item.failed { border-color: var(--error); }
-    .queue-item .q-icon { font-size: 1rem; width: 1.5rem; text-align: center; }
+    .queue-item .q-icon { font-size: 1rem; width: 1.5rem; text-align: center; flex-shrink: 0; }
     .queue-item .q-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .queue-item .q-status { font-size: 0.72rem; color: var(--ink-dim); text-align: right; }
+    .queue-item .q-status { font-size: 0.72rem; color: var(--ink-dim); text-align: right; flex-shrink: 0; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    .queue-more {
+        text-align: center; padding: 0.5rem; color: var(--ink-dim);
+        font-size: 0.75rem; font-style: italic;
+    }
+
+    .gallery { margin-top: 1.5rem; }
     .gallery-grid {
         display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 0.8rem; margin-top: 1rem;
+        gap: 0.8rem;
     }
     .gallery-item {
         border-radius: var(--radius); overflow: hidden;
         border: 1px solid var(--border); background: #000;
+        animation: fadeIn 0.4s ease;
     }
     .gallery-item video { width: 100%; display: block; aspect-ratio: 9/16; object-fit: cover; }
+    .gallery-item .g-caption {
+        padding: 0.4rem 0.6rem; background: var(--panel);
+        font-size: 0.7rem; color: var(--ink-dim);
+    }
 
     .status-bar {
         position: fixed; bottom: 0; left: 0; right: 0;
         background: var(--ink); color: #fff; padding: 0.7rem 1rem;
         font-size: 0.78rem; display: flex; align-items: center; gap: 0.6rem;
-        transform: translateY(100%); transition: transform 0.3s; z-index: 100;
+        transform: translateY(100%); transition: transform 0.3s;
+        z-index: 100;
     }
     .status-bar.visible { transform: translateY(0); }
     .status-bar .spinner {
@@ -240,26 +381,68 @@
         animation: spin 0.8s linear infinite; flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hidden { display: none !important; }
+
+    #noSleepCanvas { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -1; }
+    #noSleepVideo { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -1; }
+
+    .roster-list {
+        display: flex; flex-wrap: wrap; gap: 0.35rem;
+        margin-top: 0.5rem;
+    }
+    .roster-tag {
+        display: inline-block; padding: 0.25rem 0.55rem;
+        border-radius: 12px; font-size: 0.68rem;
+        background: var(--panel-2); border: 1px solid var(--border);
+        color: var(--ink-dim); white-space: nowrap;
+    }
+    .roster-tag.gk { border-color: #f0c040; }
+    .roster-tag.def { border-color: #4a6cf7; }
+    .roster-tag.mid { border-color: #2d8a4e; }
+    .roster-tag.att { border-color: #DA291C; }
 </style>
 </head>
 <body>
 
 <header>
-    <h1>Atelier Vidéo</h1>
-    <p class="subtitle">Vos images prolongées en vidéo</p>
+    <h1>Atelier Vidéo — PSG 2026/27</h1>
+    <p class="subtitle">Vos images prolongées en vidéo · Édition Paris Saint-Germain</p>
 </header>
 
+<div class="psg-banner">
+    <div class="psg-logo">🔴🔵</div>
+    <div class="psg-text">
+        <strong>Effectif PSG 2026/27</strong><br>
+        Safonov · Chevalier · Hakimi · Marquinhos · Pacho · Zabarnyi · Beraldo · L. Hernández · Digne · N. Mendes · Vitinha · Neves · F. Ruiz · Zaïre-Emery · Mayulu · Dro · Dembélé · Kvaratskhelia · Doué · F. Torres · Akliouche · Godts · Ndjantou
+    </div>
+</div>
+
 <div class="info-banner">
-    <strong>Comment ça marche :</strong> Ajoutez vos images, écrivez votre vision, c'est parti. Format <strong>portrait 9:16</strong>.
+    <strong>Comment ça marche :</strong> Ajoutez vos images, écrivez votre vision (ou choisissez un effet PSG),
+    c'est parti. Chaque vidéo est <strong>la prolongation animée de votre image</strong> — même sujet, même composition,
+    juste le mouvement, la lumière et l'ambiance en plus. Format <strong>portrait 9:16</strong>.
 </div>
 
 <div class="api-panel" id="api-panel">
     <input type="password" class="api-key-input" id="api-key-input"
            placeholder="Collez votre clé API ici (sk-...)" autocomplete="off" spellcheck="false">
     <button type="button" class="api-save-btn" id="api-save-btn">Enregistrer la clé</button>
-    <div class="api-status-line" id="api-status-line">Aucune clé API enregistrée</div>
+    <div class="api-status-line" id="api-status-line">
+        <span class="status-dot"></span>
+        <span id="api-status-text">Aucune clé API enregistrée</span>
+    </div>
     <div class="api-hint">
-        Clé sur <a href="https://platform.agnes-ai.com" target="_blank">platform.agnes-ai.com</a>
+        Clé gratuite sur <a href="https://platform.agnes-ai.com" target="_blank">platform.agnes-ai.com</a> → Settings → API Keys
+    </div>
+    <div class="stat-line" id="stat-line">
+        <span>📊 Vitesse moyenne : <span id="stat-speed">en attente de données</span></span>
+        <span id="stat-samples">0 génération</span>
+    </div>
+    <div class="wake-status" id="wake-status">
+        <span id="wake-status-text">💤 Veille automatique</span>
+        <button type="button" id="wake-toggle-btn">Garder l'écran allumé</button>
     </div>
 </div>
 
@@ -267,28 +450,35 @@
     <input type="file" id="file-input" accept="image/*" multiple>
     <div class="upload-icon">＋</div>
     <div class="upload-text">Ajoutez vos images</div>
-    <div class="upload-hint">Autant que vous voulez</div>
+    <div class="upload-hint">Autant que vous voulez — chacune deviendra une vidéo</div>
 </div>
 
 <div class="images-grid" id="images-grid"></div>
 
-<div class="section open">
+<div class="section open" id="section-prompt">
     <div class="section-header" data-toggle="section-prompt">
-        <span class="section-title">✍️ Votre vision</span>
+        <span class="section-title">✍️ Votre vision <span class="badge soft">recommandé</span></span>
         <span class="chevron">▼</span>
     </div>
     <div class="section-body">
         <div class="section-content">
             <textarea class="prompt-main" id="main-prompt"
-                placeholder="Décrivez ce que vous voulez. Ex: « Anime doucement chaque image, vent léger, lumière dorée, sujet identique. »"></textarea>
+                placeholder="Décrivez ce que vous voulez que l'intelligence artificielle fasse avec TOUTES vos images. Par exemple :
+
+« Anime doucement chaque image comme si le temps s'arrêtait. Un vent léger fait bouger les cheveux et les feuilles. La lumière est chaude et dorée. Garde chaque sujet exactement identique à la photo originale. »"></textarea>
             <div class="prompt-presets" id="prompt-presets"></div>
+            <div class="prompt-main-hint">
+                💡 Ce prompt s'applique à <strong>toutes</strong> les images. Si vous laissez vide et que vous choisissez
+                un effet ci-dessous, l'effet gérera les vidéos. Si vous écrivez un prompt ET choisissez un effet,
+                les deux se combinent.
+            </div>
         </div>
     </div>
 </div>
 
-<div class="section">
+<div class="section" id="section-style">
     <div class="section-header" data-toggle="section-style">
-        <span class="section-title">🎨 Effet visuel (optionnel)</span>
+        <span class="section-title">🎨 Effet visuel <span class="badge psg">PSG inclus</span></span>
         <span class="chevron">▼</span>
     </div>
     <div class="section-body">
@@ -298,18 +488,18 @@
     </div>
 </div>
 
-<div class="section">
+<div class="section" id="section-tech">
     <div class="section-header" data-toggle="section-tech">
-        <span class="section-title">📷 Réglages</span>
+        <span class="section-title">📷 Réglages techniques</span>
         <span class="chevron">▼</span>
     </div>
     <div class="section-body">
         <div class="section-content">
             <div class="control-row">
-                <label class="control-label">Durée</label>
+                <label class="control-label">Durée de chaque vidéo</label>
                 <select id="duration-select">
                     <option value="121">5 secondes</option>
-                    <option value="153" selected>6,4 secondes</option>
+                    <option value="153" selected>6,4 secondes (recommandé)</option>
                     <option value="241">10 secondes</option>
                 </select>
             </div>
@@ -317,13 +507,13 @@
                 <label class="control-label">Cadrage</label>
                 <select id="framing-select">
                     <option value="random">Aléatoire</option>
-                    <option value="close">Très serré</option>
-                    <option value="medium">Moyen</option>
-                    <option value="wide">Large</option>
+                    <option value="close">Très serré (gros plan)</option>
+                    <option value="medium">Moyen (buste)</option>
+                    <option value="wide">Large (plan large)</option>
                 </select>
             </div>
             <div class="control-row">
-                <label class="control-label">Intensité</label>
+                <label class="control-label">Intensité du mouvement</label>
                 <select id="intensity-select">
                     <option value="random">Aléatoire</option>
                     <option value="subtle">Subtile</option>
@@ -335,35 +525,387 @@
     </div>
 </div>
 
-<button type="button" class="btn-primary" id="generate-btn" disabled>Créer les vidéos</button>
-<button type="button" class="btn-stop" id="stop-btn">⏹ Arrêter</button>
+<button type="button" class="btn-primary" id="generate-btn" disabled>
+    Créer les vidéos
+</button>
 
-<div class="queue" id="queue"></div>
-<div class="gallery-grid" id="gallery-grid"></div>
+<button type="button" class="btn-stop" id="stop-btn">
+    ⏹ Arrêter la génération
+</button>
+
+<div class="queue" id="queue" style="display:none;"></div>
+
+<div class="gallery" id="gallery" style="display:none;">
+    <div class="section-title" style="margin-bottom:0.8rem;">Vidéos générées</div>
+    <div class="gallery-grid" id="gallery-grid"></div>
+</div>
 
 <div class="status-bar" id="status-bar">
     <div class="spinner"></div>
     <span id="status-text">Préparation…</span>
 </div>
 
-<div class="toast" id="toast"><span id="toast-text">Message</span></div>
+<div class="toast" id="toast">
+    <span class="toast-icon" id="toast-icon">✓</span>
+    <span id="toast-text">Message</span>
+</div>
+
+<canvas id="noSleepCanvas" width="2" height="2"></canvas>
+<video id="noSleepVideo" playsinline muted loop></video>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════════════════
-var API_BASE = 'https://apihub.agnes-ai.com/v1';
-var POLL_BASE = 'https://apihub.agnes-ai.com/agnesapi';
-var MODEL_VIDEO = 'agnes-video-v2.0';
-var FRAME_RATE = 24;
-var API_KEY_STORAGE = 'agnes_api_key_v2';
-var SESSION_KEY_STORAGE = 'agnes_api_key_session';
-var POLL_INTERVAL_SEC = 8;
-var MAX_POLL_ATTEMPTS = 100;
-var MAX_IMAGE_SIZE = 12 * 1024 * 1024;
-var THUMBNAIL_MAX_WIDTH = 200;
+// ══════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ══════════════════════════════════════════════════════════════════
+const API_BASE = 'https://apihub.agnes-ai.com/v1';
+const POLL_BASE = 'https://apihub.agnes-ai.com/agnesapi';
+const MODEL_VIDEO = 'agnes-video-v2.0';
+const FRAME_RATE = 24;
 
-var state = {
+let createIntervalMs = 62000;
+const CREATE_INTERVAL_MIN = 62000;
+const CREATE_INTERVAL_MAX = 90000;
+const CREATE_INTERVAL_SAFE = 75000;
+
+const POLL_INTERVAL_SEC = 8;
+const MAX_POLL_ATTEMPTS = 100;
+
+const TIMING_CACHE_KEY = 'agnes_timing_cache_v10';
+const API_KEY_STORAGE = 'agnes_api_key';
+const WAKE_LOCK_PREF = 'agnes_wakelock_enabled';
+
+const MAX_VISIBLE_QUEUE = 30;
+const MAX_IMAGE_SIZE = 12 * 1024 * 1024;
+const THUMBNAIL_MAX_WIDTH = 200;
+
+// ══════════════════════════════════════════════════════════════════
+// PSG 2026/27 — EFFECTIF OFFICIEL
+// ══════════════════════════════════════════════════════════════════
+const PSG_ROSTER = {
+    gk: ['Safonov', 'Chevalier', 'Longoni'],
+    def: ['Hakimi', 'Marquinhos', 'Pacho', 'Zabarnyi', 'Beraldo', 'L. Hernández', 'Digne', 'N. Mendes'],
+    mid: ['Vitinha', 'João Neves', 'Fabián Ruiz', 'Zaïre-Emery', 'Mayulu', 'Dro Fernández'],
+    att: ['Dembélé', 'Kvaratskhelia', 'Doué', 'Ferran Torres', 'Akliouche', 'Godts', 'Ndjantou']
+};
+
+const PSG_EFFECTS = [
+    { id: 'psg-match', name: 'Match au Parc', emoji: '🏟️', desc: 'Ambiance Parc des Princes, tribunes, pelouse',
+      prompt: 'Paris Saint-Germain match atmosphere at Parc des Princes, packed stadium with blue and red flags, floodlights, green pitch, Ligue des Champions atmosphere, PSG supporters singing, cinematic sports broadcast quality. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-celebration', name: 'Célébration But', emoji: '⚽', desc: 'Joie, coéquipiers, fumigènes',
+      prompt: 'PSG goal celebration, players running and sliding on knees, arms wide open, blue and red smoke flares, confetti, roaring crowd, intense emotion, dramatic sports photography. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-portrait', name: 'Portrait Officiel', emoji: '📸', desc: 'Studio, maillot, éclairage pro',
+      prompt: 'official PSG team portrait, studio lighting, blue and red gradient background, player wearing Paris Saint-Germain home kit, sharp focus, professional sports photography, UEFA Champions League patch visible. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-training', name: 'Entraînement', emoji: '🏃', desc: 'Camp des Loges, intensité, sueur',
+      prompt: 'PSG training session at Camp des Loges, players in training kit, intense physical effort, sweat, focus, morning light, professional sports documentary style. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-trophy', name: 'Trophée', emoji: '🏆', desc: 'Ligue des Champions, coupe, lumière',
+      prompt: 'PSG lifting the UEFA Champions League trophy, golden confetti, blue and red lights, players celebrating with the cup, iconic moment, cinematic slow motion. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-ultras', name: 'Ambiance Ultras', emoji: '🔥', desc: 'Auteuil, fumigènes, tifo',
+      prompt: 'PSG ultras atmosphere in Auteuil stand, massive tifo, blue and red smoke, drums, chants, passion, raw supporter energy, documentary style. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-derby', name: 'Classique vs OM', emoji: '⚔️', desc: 'Rivalité, tension, choc',
+      prompt: 'PSG vs Olympique de Marseille Classique, intense rivalry, packed stadium, blue and red vs white and blue, tackles, tension, French football biggest match, cinematic sports drama. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'psg-champions', name: 'Nuit de Ligue des Champions', emoji: '⭐', desc: 'Hymne, pelouse, projecteurs',
+      prompt: 'UEFA Champions League night at Parc des Princes, players lined up for the anthem, star ball, floodlights, blue and red flags, prestigious European atmosphere, cinematic. Preserve the exact subject identity, face, pose, and clothing.' }
+];
+
+// ══════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════
+let toastTimeout = null;
+function showToast(message, type = 'success', duration = 2500) {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    const text = document.getElementById('toast-text');
+    if (!toast || !icon || !text) return;
+    toast.classList.remove('visible', 'success', 'error', 'warn');
+    void toast.offsetWidth;
+    const icons = { success: '✓', error: '✕', warn: '⚠' };
+    icon.textContent = icons[type] || '✓';
+    text.textContent = message;
+    toast.classList.add(type);
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('visible'), duration);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ANTI-VEILLE
+// ══════════════════════════════════════════════════════════════════
+let wakeLockSentinel = null;
+let wakeLockEnabled = false;
+let canvasStream = null;
+let canvasInterval = null;
+
+function isWakeLockSupported() {
+    return 'wakeLock' in navigator && typeof navigator.wakeLock.request === 'function';
+}
+async function requestWakeLockAPI() {
+    if (!isWakeLockSupported()) return false;
+    try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; updateWakeStatus(); });
+        return true;
+    } catch (e) { return false; }
+}
+async function releaseWakeLockAPI() {
+    if (wakeLockSentinel) { try { await wakeLockSentinel.release(); } catch (e) {} wakeLockSentinel = null; }
+}
+function startCanvasStream() {
+    if (canvasStream) return true;
+    try {
+        const canvas = document.getElementById('noSleepCanvas');
+        const video = document.getElementById('noSleepVideo');
+        if (!canvas || !video) return false;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return false;
+        ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (typeof canvas.captureStream !== 'function') return false;
+        canvasStream = canvas.captureStream(1);
+        let toggle = false;
+        canvasInterval = setInterval(() => {
+            toggle = !toggle;
+            ctx.fillStyle = toggle ? '#000000' : '#010101';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }, 1000);
+        video.srcObject = canvasStream; video.muted = true; video.playsInline = true;
+        const p = video.play(); if (p && p.catch) p.catch(() => {});
+        return true;
+    } catch (e) { return false; }
+}
+function stopCanvasStream() {
+    if (canvasInterval) { clearInterval(canvasInterval); canvasInterval = null; }
+    const video = document.getElementById('noSleepVideo');
+    if (video) { try { video.pause(); video.srcObject = null; } catch (e) {} }
+    if (canvasStream) { try { canvasStream.getTracks().forEach(t => t.stop()); } catch (e) {} canvasStream = null; }
+}
+async function activateWakeLock() {
+    let success = false;
+    if (isWakeLockSupported()) success = await requestWakeLockAPI();
+    if (!success) success = startCanvasStream();
+    if (!success && !canvasStream) success = startCanvasStream();
+    return success;
+}
+async function deactivateWakeLock() { await releaseWakeLockAPI(); stopCanvasStream(); }
+function updateWakeStatus() {
+    const el = document.getElementById('wake-status');
+    const txt = document.getElementById('wake-status-text');
+    const btn = document.getElementById('wake-toggle-btn');
+    if (!el || !txt || !btn) return;
+    el.classList.remove('active', 'warn');
+    const hasAny = isWakeLockSupported() || (document.getElementById('noSleepCanvas')?.captureStream);
+    if (!hasAny) { el.classList.add('warn'); txt.textContent = '⚠️ Non supporté'; btn.style.display = 'none'; return; }
+    btn.style.display = 'inline-block';
+    const isActive = wakeLockSentinel !== null || canvasStream !== null;
+    if (wakeLockEnabled && isActive) { el.classList.add('active'); txt.textContent = '✅ L\'écran reste allumé'; btn.textContent = 'Désactiver'; }
+    else if (wakeLockEnabled && !isActive) { el.classList.add('warn'); txt.textContent = '⏳ En attente'; btn.textContent = 'Désactiver'; }
+    else { txt.textContent = '💤 Veille automatique'; btn.textContent = 'Garder l\'écran allumé'; }
+}
+async function toggleWakeLock() {
+    if (wakeLockEnabled) {
+        wakeLockEnabled = false; await deactivateWakeLock();
+        try { localStorage.setItem(WAKE_LOCK_PREF, '0'); } catch (e) {}
+        showToast('Veille automatique réactivée', 'warn');
+    } else {
+        wakeLockEnabled = true; const ok = await activateWakeLock();
+        try { localStorage.setItem(WAKE_LOCK_PREF, '1'); } catch (e) {}
+        showToast(ok ? 'L\'écran va rester allumé' : 'Activez manuellement', ok ? 'success' : 'warn');
+    }
+    updateWakeStatus();
+}
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && wakeLockEnabled) { await activateWakeLock(); updateWakeStatus(); }
+});
+async function ensureWakeLockActive() {
+    if (!wakeLockEnabled) return;
+    if (wakeLockSentinel === null && canvasStream === null) { await activateWakeLock(); updateWakeStatus(); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CACHE DES TEMPS
+// ══════════════════════════════════════════════════════════════════
+function loadTimingCache() { try { return JSON.parse(localStorage.getItem(TIMING_CACHE_KEY) || '{}'); } catch (e) { return {}; } }
+function saveTimingCache(cache) { try { localStorage.setItem(TIMING_CACHE_KEY, JSON.stringify(cache)); } catch (e) {} }
+function recordGenerationTime(numFrames, durationMs) {
+    const cache = loadTimingCache();
+    const key = String(numFrames);
+    if (!cache[key]) cache[key] = [];
+    cache[key].push(durationMs);
+    if (cache[key].length > 10) cache[key] = cache[key].slice(-10);
+    saveTimingCache(cache); updateTimingDisplay();
+}
+function estimateGenerationTime(numFrames) {
+    const cache = loadTimingCache();
+    const samples = cache[String(numFrames)];
+    if (samples && samples.length > 0) {
+        const sorted = [...samples].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 === 0 ? (sorted[mid-1] + sorted[mid]) / 2 : sorted[mid];
+    }
+    return 30000 + numFrames * 500;
+}
+function updateTimingDisplay() {
+    const cache = loadTimingCache();
+    const all = Object.values(cache).flat();
+    const speedEl = document.getElementById('stat-speed');
+    const samplesEl = document.getElementById('stat-samples');
+    if (!speedEl || !samplesEl) return;
+    if (all.length === 0) { speedEl.textContent = 'en attente'; samplesEl.textContent = '0 génération'; return; }
+    const avg = all.reduce((a, b) => a + b, 0) / all.length;
+    speedEl.textContent = (avg / 1000).toFixed(1) + ' s en moyenne';
+    samplesEl.textContent = all.length + ' génération' + (all.length > 1 ? 's' : '');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PRESETS DE PROMPT — incluant PSG
+// ══════════════════════════════════════════════════════════════════
+const PROMPT_PRESETS = [
+    { label: '🌬️ Vent léger',
+      text: 'Anime doucement l\'image comme si le temps s\'arrêtait. Un vent léger fait bouger les cheveux et les feuilles. La lumière est chaude et dorée. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '💭 Rêve éveillé',
+      text: 'Prolonge cette image dans un rêve éveillé. Mouvements très lents, respiration visible, lumière douce et diffuse. Atmosphère onirique et paisible. Le sujet reste identique à la photo.' },
+    { label: '🌅 Golden hour',
+      text: 'Anime cette image avec une lumière dorée de fin de journée. Longues ombres chaudes, reflets lumineux, ambiance cinématographique. Le sujet reste identique à la photo originale.' },
+    { label: '🌙 Nuit calme',
+      text: 'Prolonge cette image dans une ambiance nocturne paisible. Lumière bleutée, reflets argentés, mouvement très lent. Le sujet reste identique à la photo.' },
+    { label: '⚫ Noir & blanc',
+      text: 'Anime cette image en noir et blanc élégant. Contraste doux, grain subtil, ambiance photographique classique. Le sujet reste identique à la photo.' },
+    { label: '🎬 Cinématique',
+      text: 'Anime cette image avec une esthétique cinématographique. Mouvement de caméra lent, lumière dramatique, profondeur de champ. Le sujet reste identique à la photo originale.' },
+    { label: '🌫️ Brume poétique',
+      text: 'Prolonge cette image dans une brume douce et poétique. Halo lumineux, particules flottantes, atmosphère mystérieuse. Le sujet reste identique à la photo.' },
+    // PSG presets
+    { label: '🔴🔵 PSG — Match au Parc', psg: true,
+      text: 'Anime cette image comme un moment de match au Parc des Princes. Ambiance Ligue des Champions, tribunes pleines de drapeaux bleus et rouges, projecteurs, pelouse verte. Les supporters chantent, l\'émotion est intense. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Célébration', psg: true,
+      text: 'Prolonge cette image en pleine célébration de but du PSG. Joueurs qui courent, glissent sur les genoux, bras ouverts, fumigènes bleus et rouges, confettis, foule en délire. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Portrait officiel', psg: true,
+      text: 'Anime cette image comme un portrait officiel du PSG. Éclairage studio, fond dégradé bleu et rouge, maillot domicile du Paris Saint-Germain, écusson Ligue des Champions visible. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Entraînement', psg: true,
+      text: 'Anime cette image comme une séance d\'entraînement du PSG au Camp des Loges. Intensité, sueur, concentration, lumière du matin, style documentaire sportif. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Trophée', psg: true,
+      text: 'Prolonge cette image comme si le PSG soulevait la Ligue des Champions. Confettis dorés, lumières bleues et rouges, joueurs célébrant avec la coupe, moment iconique, ralenti cinématique. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Ambiance Ultras', psg: true,
+      text: 'Anime cette image dans l\'ambiance des ultras du PSG à Auteuil. Tifo géant, fumigènes bleus et rouges, tambours, chants, passion brute, style documentaire. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Classique vs OM', psg: true,
+      text: 'Prolonge cette image dans l\'ambiance du Classique PSG vs Olympique de Marseille. Rivalité intense, stade plein, bleu et rouge contre blanc et bleu, duels, tension, plus grand match du football français. Garde chaque sujet exactement identique à la photo originale.' },
+    { label: '🔴🔵 PSG — Nuit de C1', psg: true,
+      text: 'Anime cette image lors d\'une nuit de Ligue des Champions au Parc des Princes. Joueurs alignés pour l\'hymne, ballon étoilé, projecteurs, drapeaux bleus et rouges, atmosphère européenne prestigieuse. Garde chaque sujet exactement identique à la photo originale.' }
+];
+
+// ══════════════════════════════════════════════════════════════════
+// EFFETS VISUELS — Ambiance + Stylize + PSG
+// ══════════════════════════════════════════════════════════════════
+const AMBIANCE_EFFECTS = [
+    { id: 'cinematic', name: 'Cinématique', emoji: '🎬', desc: 'Éclairage dramatique, grain film',
+      prompt: 'cinematic film look, dramatic lighting, subtle film grain, shallow depth of field, professional color grading, movie-like atmosphere. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'golden-hour', name: 'Golden Hour', emoji: '🌅', desc: 'Lumière chaude dorée',
+      prompt: 'golden hour warm sunlight, soft amber glow, long shadows, luminous atmosphere, hazy warm tones. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'bw', name: 'Noir & Blanc', emoji: '⚫', desc: 'Désaturation élégante',
+      prompt: 'elegant black and white, high contrast monochrome, deep blacks and luminous whites. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'pastel-dream', name: 'Pastel Rêveur', emoji: '🌸', desc: 'Teintes douces, flou léger',
+      prompt: 'soft pastel color palette, dreamy diffused light, gentle dreamlike atmosphere, subtle glow. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'neon-urban', name: 'Néon Urbain', emoji: '🌆', desc: 'Reflets colorés nocturnes',
+      prompt: 'neon-soaked night atmosphere, colorful reflections, cinematic urban glow, magenta and cyan accents. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'vintage-super8', name: 'Vintage Super 8', emoji: '📽️', desc: 'Grain, vignettage, chaleur',
+      prompt: 'vintage Super 8 film aesthetic, grainy texture, subtle vignette, warm faded colors, soft focus edges. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'dramatic-contrast', name: 'Contraste Dramatique', emoji: '🌓', desc: 'Ombres profondes',
+      prompt: 'high contrast dramatic lighting, deep shadows, bright highlights, chiaroscuro effect. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'misty', name: 'Brume Mystique', emoji: '🌫️', desc: 'Halo atmosphérique',
+      prompt: 'atmospheric mist, soft haze, diffused glowing light, mystical fog, ethereal atmosphere. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'chiaroscuro', name: 'Chiaroscuro', emoji: '🕯️', desc: 'Clair-obscur pictural',
+      prompt: 'chiaroscuro painting lighting, single source of warm light, deep surrounding darkness. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'tropical', name: 'Tropical Saturé', emoji: '🌴', desc: 'Couleurs vives',
+      prompt: 'vibrant tropical color palette, saturated warm colors, lush green and turquoise. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'moonlight', name: 'Clair de Lune', emoji: '🌙', desc: 'Ambiance bleutée',
+      prompt: 'cool moonlight atmosphere, blue and silver tones, soft lunar glow, peaceful night mood. Preserve the exact subject identity, face, pose, and clothing.' },
+    { id: 'sunrise', name: 'Aube Douce', emoji: '🌄', desc: 'Premières lueurs',
+      prompt: 'dawn light, soft pink and pale blue sky tones, gentle awakening atmosphere. Preserve the exact subject identity, face, pose, and clothing.' }
+];
+
+const STYLIZE_EFFECTS = [
+    { id: 'simpson', name: 'Les Simpson', emoji: '🍩', desc: 'Transformation cartoon',
+      prompt: 'The Simpsons cartoon style, yellow-skinned characters, thick black outlines, flat saturated colors, Matt Groening art style. Transform the entire image into this cartoon style.' },
+    { id: 'ghibli', name: 'Studio Ghibli', emoji: '🌿', desc: 'Transformation anime',
+      prompt: 'Studio Ghibli anime style, Hayao Miyazaki aesthetic, hand-painted watercolor backgrounds, cel-shaded characters. Transform the entire image into this anime style.' },
+    { id: 'manga-nb', name: 'Manga N&B', emoji: '🖤', desc: 'Transformation manga',
+      prompt: 'black and white Japanese manga style, stark ink outlines, dramatic screentones, high contrast. Transform the entire image into this manga style.' },
+    { id: 'polar', name: 'Polar / Film Noir', emoji: '🕵️', desc: 'Transformation N&B',
+      prompt: 'classic film noir aesthetic, high contrast black and white, dramatic chiaroscuro, 1940s detective atmosphere. Transform the entire image into this noir style.' },
+    { id: 'cyberpunk', name: 'Cyberpunk', emoji: '🌃', desc: 'Transformation futuriste',
+      prompt: 'cyberpunk futuristic aesthetic, neon pink and cyan lighting, holographic advertisements, Blade Runner atmosphere. Transform the entire image into this cyberpunk style.' },
+    { id: 'pixar', name: 'Pixar 3D', emoji: '✨', desc: 'Transformation 3D',
+      prompt: 'high-quality 3D computer animation, Pixar-style rendering, subsurface scattering, cinematic lighting. Transform the entire image into this 3D animated style.' },
+    { id: 'bd-franco', name: 'BD franco-belge', emoji: '📘', desc: 'Transformation ligne claire',
+      prompt: 'Franco-Belgian bande dessinée style, ligne claire technique, uniform clean ink outlines, flat vivid colors. Transform the entire image into this comic book style.' },
+    { id: 'watercolor', name: 'Aquarelle', emoji: '🎨', desc: 'Transformation aquarelle',
+      prompt: 'dreamy watercolor painting aesthetic, soft bleeding edges, translucent washes, paper texture. Transform the entire image into this watercolor style.' },
+    { id: 'oil', name: 'Peinture à l\'huile', emoji: '🖼️', desc: 'Transformation huile',
+      prompt: 'classical oil painting style, visible impasto brushstrokes, rich textured paint, old master technique. Transform the entire image into this oil painting style.' },
+    { id: 'claymation', name: 'Claymation', emoji: '🧱', desc: 'Transformation claymation',
+      prompt: 'claymation stop-motion animation, plasticine texture, fingerprint details, Aardman Studios style. Transform the entire image into this claymation style.' },
+    { id: 'vaporwave', name: 'Vaporwave', emoji: '🌴', desc: 'Transformation 90s',
+      prompt: 'vaporwave aesthetic, nostalgic 90s imagery, pastel gradient, VHS quality. Transform the entire image into this vaporwave style.' },
+    { id: 'surrealist', name: 'Surréaliste', emoji: '🌀', desc: 'Transformation surréaliste',
+      prompt: 'surrealist aesthetic, impossible juxtapositions, dreamlike distortions, Salvador Dali influence. Transform the entire image into this surrealist style.' }
+];
+
+// Les effets PSG sont définis plus haut dans PSG_EFFECTS
+
+// ══════════════════════════════════════════════════════════════════
+// MOUVEMENTS
+// ══════════════════════════════════════════════════════════════════
+const RANDOM_ACTIONS = [
+    'the subject slowly raises a hand toward the camera, fingers trembling slightly',
+    'a single tear rolls down the subject\'s cheek in extreme slow motion',
+    'the subject turns their head slowly, eyes closing, breathing softly',
+    'the subject\'s hair moves gently in an imperceptible breeze',
+    'the subject stands still, only their chest rising and falling with breath',
+    'the subject\'s eyes open slowly, revealing an intense gaze directly at the camera',
+    'the subject extends a hand as if reaching for something just out of frame',
+    'the subject lifts their chin slightly, a silent gesture of presence',
+    'the subject walks slowly toward the camera, each step deliberate',
+    'the subject looks down at their own hands, discovering them for the first time',
+    'the subject\'s body shivers involuntarily, a wave of emotion passing through',
+    'the subject leans forward slightly, closing the distance with the viewer'
+];
+
+const RANDOM_CAMERA = [
+    'slow dolly-in, camera gliding forward almost imperceptibly',
+    'static locked-off frame, subject moves within fixed borders',
+    'handheld, slight tremor, camera breathing with the subject',
+    'slow pan following the subject\'s movement',
+    'subtle parallax movement revealing depth',
+    'high angle looking down, subject appears small and vulnerable',
+    'low angle looking up, subject appears powerful',
+    'rack focus from foreground to subject',
+    'camera drifts backward slowly, revealing a bit more of the environment'
+];
+
+const RANDOM_LIGHTING = [
+    'soft diffused natural light',
+    'warm golden hour backlight',
+    'dramatic side lighting with deep shadows',
+    'gentle ambient glow, almost shadowless',
+    'cool moonlight atmosphere',
+    'warm interior candlelight flicker',
+    'cinematic rim lighting emphasizing the silhouette'
+];
+
+const INTENSITY_PRESETS = {
+    subtle: 'very subtle movement, barely perceptible change, minimal animation, gentle and quiet',
+    moderate: 'moderate movement, clear but controlled motion, balanced energy',
+    strong: 'strong dynamic movement, energetic motion, pronounced physical action'
+};
+
+const FRAMING_PRESETS = {
+    close: 'extreme close-up framing, tight on the subject, intimate and intense',
+    medium: 'medium shot, subject framed from waist up, balanced composition',
+    wide: 'wide shot, subject framed with the environment visible'
+};
+
+// ══════════════════════════════════════════════════════════════════
+// ÉTAT GLOBAL
+// ══════════════════════════════════════════════════════════════════
+const state = {
     images: [],
     isRunning: false,
     stopRequested: false,
@@ -374,507 +916,459 @@ var state = {
     mainPrompt: '',
     framing: 'random',
     intensity: 'random',
-    durationFrames: 153
+    durationFrames: 153,
+    isLoadingImages: false,
+    creationAttemptsSinceLastError: 0,
+    psgContext: false
 };
 
-// ═══════════════════════════════════════════════════════════
-// UTILITAIRES
-// ═══════════════════════════════════════════════════════════
-function log(m) { console.log('[Atelier] ' + m); }
-function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
-function randomItem(a) { return a[Math.floor(Math.random() * a.length)]; }
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-
-var toastTimeout = null;
-function showToast(msg, type) {
-    type = type || 'success';
-    var t = document.getElementById('toast');
-    var tx = document.getElementById('toast-text');
-    if (!t || !tx) return;
-    t.classList.remove('visible', 'success', 'error', 'warn');
-    void t.offsetWidth;
-    tx.textContent = msg;
-    t.classList.add(type);
-    requestAnimationFrame(function() { t.classList.add('visible'); });
-    if (toastTimeout) clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(function() { t.classList.remove('visible'); }, 2500);
-}
-
-function setStatus(txt) {
-    var bar = document.getElementById('status-bar');
-    var t = document.getElementById('status-text');
-    if (!bar || !t) return;
-    if (txt) { bar.classList.add('visible'); t.textContent = txt; }
-    else bar.classList.remove('visible');
-}
-
-// ═══════════════════════════════════════════════════════════
-// CLÉ API — CORRIGÉ POUR MOBILE
-// ═══════════════════════════════════════════════════════════
-function getApiKey() {
-    // 1. localStorage
-    try {
-        var k = (localStorage.getItem(API_KEY_STORAGE) || '').trim();
-        if (k) return k;
-    } catch (e) { log('localStorage lecture fail: ' + e.message); }
-
-    // 2. sessionStorage
-    try {
-        var k2 = (sessionStorage.getItem(SESSION_KEY_STORAGE) || '').trim();
-        if (k2) return k2;
-    } catch (e) { log('sessionStorage lecture fail: ' + e.message); }
-
-    // 3. fallback mémoire
-    return (window.__fallbackApiKey || '').trim();
-}
+// ══════════════════════════════════════════════════════════════════
+// CLÉ API
+// ══════════════════════════════════════════════════════════════════
+function getApiKey() { try { return (localStorage.getItem(API_KEY_STORAGE) || '').trim(); } catch (e) { return ''; } }
 
 function saveApiKey() {
-    var input = document.getElementById('api-key-input');
-    if (!input) { log('Input introuvable'); return; }
-
-    var key = input.value.trim();
-    log('Tentative save, longueur = ' + key.length);
-
-    if (!key) {
-        try { localStorage.removeItem(API_KEY_STORAGE); } catch (e) {}
-        try { sessionStorage.removeItem(SESSION_KEY_STORAGE); } catch (e) {}
-        window.__fallbackApiKey = '';
-        updateApiPanel();
-        showToast('Clé supprimée', 'warn');
-        return;
-    }
-
-    var saved = false;
-
-    // Essai 1 : localStorage
-    try {
-        localStorage.setItem(API_KEY_STORAGE, key);
-        var check = localStorage.getItem(API_KEY_STORAGE);
-        if (check === key) { saved = true; log('localStorage OK'); }
-    } catch (e) { log('localStorage write fail: ' + e.message); }
-
-    // Essai 2 : sessionStorage
-    if (!saved) {
-        try {
-            sessionStorage.setItem(SESSION_KEY_STORAGE, key);
-            var c2 = sessionStorage.getItem(SESSION_KEY_STORAGE);
-            if (c2 === key) { saved = true; log('sessionStorage OK'); }
-        } catch (e) { log('sessionStorage write fail: ' + e.message); }
-    }
-
-    // Essai 3 : mémoire
-    if (!saved) {
-        window.__fallbackApiKey = key;
-        saved = true;
-        log('Fallback mémoire activé');
-    }
-
-    updateApiPanel();
-    showToast(saved ? 'Clé API enregistrée ✓' : 'Erreur', 'success');
-    try { input.blur(); } catch (e) {}
+    const input = document.getElementById('api-key-input');
+    if (!input) return;
+    const key = input.value.trim();
+    if (!key) { try { localStorage.removeItem(API_KEY_STORAGE); } catch (e) {} updateApiPanel(); showToast('Clé supprimée', 'warn'); return; }
+    if (!key.startsWith('sk-') && !confirm('La clé ne commence pas par "sk-". La sauvegarder quand même ?')) return;
+    try { localStorage.setItem(API_KEY_STORAGE, key); updateApiPanel(); showToast('Clé API enregistrée ✓', 'success'); input.blur(); }
+    catch (e) { showToast('Erreur lors de la sauvegarde', 'error'); }
 }
 
 function updateApiPanel() {
-    var panel = document.getElementById('api-panel');
-    var input = document.getElementById('api-key-input');
-    var statusLine = document.getElementById('api-status-line');
-    var key = getApiKey();
-
-    if (!panel || !input || !statusLine) return;
-
+    const panel = document.getElementById('api-panel');
+    const input = document.getElementById('api-key-input');
+    const statusLine = document.getElementById('api-status-line');
+    const statusText = document.getElementById('api-status-text');
+    const key = getApiKey();
+    if (!panel || !input || !statusLine || !statusText) return;
     if (key) {
-        panel.classList.add('ok');
-        statusLine.classList.add('ok');
-        statusLine.textContent = '✓ Clé active · ' + key.slice(0, 8) + '…' + key.slice(-4);
-        if (input.value !== key) input.value = key;
+        panel.classList.add('ok'); statusLine.classList.add('ok');
+        statusText.textContent = 'Clé API active · ' + key.slice(0, 8) + '…' + key.slice(-4);
+        input.value = key; input.placeholder = '';
     } else {
-        panel.classList.remove('ok');
-        statusLine.classList.remove('ok');
-        statusLine.textContent = 'Aucune clé API enregistrée';
+        panel.classList.remove('ok'); statusLine.classList.remove('ok');
+        statusText.textContent = 'Aucune clé API enregistrée';
+        input.value = ''; input.placeholder = 'Collez votre clé API ici (sk-...)';
     }
     updateGenerateBtn();
 }
 
 function updateGenerateBtn() {
-    var btn = document.getElementById('generate-btn');
+    const btn = document.getElementById('generate-btn');
     if (!btn) return;
-    var hasImages = state.images.length > 0;
-    var hasKey = !!getApiKey();
-    btn.disabled = !hasImages || !hasKey || state.isRunning;
+    const hasImages = state.images.length > 0;
+    const hasKey = !!getApiKey();
+    btn.disabled = !hasImages || !hasKey || state.isRunning || state.isLoadingImages;
 
-    if (state.isRunning) {
-        btn.textContent = 'Création en cours… (' + (state.completed + state.failed) + '/' + state.queue.length + ')';
-    } else if (!hasKey) {
-        btn.textContent = 'Ajoutez votre clé API';
-    } else if (!hasImages) {
-        btn.textContent = 'Ajoutez des images';
-    } else {
-        btn.textContent = 'Créer ' + state.images.length + ' vidéo' + (state.images.length > 1 ? 's' : '');
+    if (state.isLoadingImages) btn.textContent = 'Chargement des images… (' + state.images.length + ')';
+    else if (state.isRunning) {
+        const total = state.queue.length;
+        const done = state.completed + state.failed;
+        btn.textContent = 'Création en cours… (' + done + '/' + total + ')';
     }
+    else if (!hasKey) btn.textContent = 'Ajoutez votre clé API';
+    else if (!hasImages) btn.textContent = 'Ajoutez des images';
+    else {
+        const psgTag = state.psgContext ? ' PSG' : '';
+        btn.textContent = 'Créer ' + state.images.length + ' vidéo' + (state.images.length > 1 ? 's' : '') + psgTag;
+    }
+    btn.classList.toggle('psg-ready', state.psgContext && hasImages && hasKey);
 }
 
-// ═══════════════════════════════════════════════════════════
-// PRESETS
-// ═══════════════════════════════════════════════════════════
-var PROMPT_PRESETS = [
-    { label: '🌬️ Vent léger', text: 'Anime doucement l\'image comme si le temps s\'arrêtait. Un vent léger fait bouger les cheveux et les feuilles. La lumière est chaude et dorée. Garde chaque sujet exactement identique à la photo originale.' },
-    { label: '💭 Rêve éveillé', text: 'Prolonge cette image dans un rêve éveillé. Mouvements très lents, respiration visible, lumière douce. Le sujet reste identique à la photo.' },
-    { label: '🌅 Golden hour', text: 'Anime cette image avec une lumière dorée de fin de journée. Ambiance cinématographique. Le sujet reste identique.' },
-    { label: '🌙 Nuit calme', text: 'Prolonge cette image dans une ambiance nocturne paisible. Lumière bleutée, mouvement très lent.' },
-    { label: '🎬 Cinématique', text: 'Anime cette image avec une esthétique cinématographique. Mouvement de caméra lent, lumière dramatique.' }
-];
+// ══════════════════════════════════════════════════════════════════
+// UTILITAIRES
+// ══════════════════════════════════════════════════════════════════
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function log(msg) { console.log('[Atelier] ' + msg); }
+function setStatus(text) {
+    const bar = document.getElementById('status-bar');
+    const txt = document.getElementById('status-text');
+    if (!bar || !txt) return;
+    if (text) { bar.classList.add('visible'); txt.textContent = text; }
+    else bar.classList.remove('visible');
+}
+function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function formatEta(seconds) {
+    if (seconds < 60) return Math.round(seconds) + 's';
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    return m + 'm' + (s > 0 ? ' ' + s + 's' : '');
+}
 
-var AMBIANCE_EFFECTS = [
-    { id: 'cinematic', name: 'Cinématique', emoji: '🎬', desc: 'Éclairage dramatique',
-      prompt: 'cinematic film look, dramatic lighting, shallow depth of field, movie-like atmosphere. Preserve the exact subject identity.' },
-    { id: 'golden-hour', name: 'Golden Hour', emoji: '🌅', desc: 'Lumière dorée',
-      prompt: 'golden hour warm sunlight, soft amber glow, hazy warm tones. Preserve the exact subject identity.' },
-    { id: 'bw', name: 'Noir & Blanc', emoji: '⚫', desc: 'Monochrome élégant',
-      prompt: 'elegant black and white, high contrast monochrome. Preserve the exact subject identity.' },
-    { id: 'pastel-dream', name: 'Pastel', emoji: '🌸', desc: 'Teintes douces',
-      prompt: 'soft pastel palette, dreamy diffused light. Preserve the exact subject identity.' },
-    { id: 'neon', name: 'Néon', emoji: '🌆', desc: 'Reflets nocturnes',
-      prompt: 'neon-soaked night, magenta and cyan accents. Preserve the exact subject identity.' },
-    { id: 'vintage', name: 'Vintage', emoji: '📽️', desc: 'Grain, chaleur',
-      prompt: 'vintage Super 8 aesthetic, grainy texture, warm faded colors. Preserve the exact subject identity.' }
-];
-
-var STYLIZE_EFFECTS = [
-    { id: 'simpson', name: 'Simpson', emoji: '🍩', desc: 'Cartoon jaune',
-      prompt: 'The Simpsons cartoon style, yellow-skinned characters, thick black outlines, flat saturated colors. Transform the entire image.' },
-    { id: 'ghibli', name: 'Ghibli', emoji: '🌿', desc: 'Anime poétique',
-      prompt: 'Studio Ghibli anime style, hand-painted watercolor backgrounds, cel-shaded characters. Transform the entire image.' },
-    { id: 'cyberpunk', name: 'Cyberpunk', emoji: '🌃', desc: 'Futuriste néon',
-      prompt: 'cyberpunk futuristic aesthetic, neon pink and cyan lighting, Blade Runner atmosphere. Transform the entire image.' },
-    { id: 'pixar', name: 'Pixar 3D', emoji: '✨', desc: 'Rendu 3D',
-      prompt: 'high-quality 3D animation, Pixar-style rendering, cinematic lighting. Transform the entire image.' },
-    { id: 'watercolor', name: 'Aquarelle', emoji: '🎨', desc: 'Peinture douce',
-      prompt: 'dreamy watercolor painting, soft bleeding edges, paper texture. Transform the entire image.' },
-    { id: 'oil', name: 'Huile', emoji: '🖼️', desc: 'Peinture classique',
-      prompt: 'classical oil painting, visible impasto brushstrokes, old master technique. Transform the entire image.' }
-];
-
-var RANDOM_ACTIONS = [
-    'the subject slowly raises a hand toward the camera',
-    'the subject turns their head slowly, breathing softly',
-    'the subject\'s hair moves gently in a breeze',
-    'the subject stands still, chest rising and falling',
-    'the subject walks slowly toward the camera',
-    'the subject looks down at their own hands'
-];
-var RANDOM_CAMERA = [
-    'slow dolly-in, camera gliding forward',
-    'static locked-off frame',
-    'handheld, slight tremor',
-    'slow pan following the subject'
-];
-var RANDOM_LIGHTING = [
-    'soft diffused natural light',
-    'warm golden hour backlight',
-    'dramatic side lighting',
-    'gentle ambient glow'
-];
-
-var INTENSITY_PRESETS = {
-    subtle: 'very subtle movement, barely perceptible',
-    moderate: 'moderate movement, controlled motion',
-    strong: 'strong dynamic movement, energetic'
-};
-var FRAMING_PRESETS = {
-    close: 'extreme close-up framing',
-    medium: 'medium shot, waist up',
-    wide: 'wide shot with environment visible'
-};
-
-// ═══════════════════════════════════════════════════════════
-// IMAGES
-// ═══════════════════════════════════════════════════════════
-function fileToDataUri(f) {
-    return new Promise(function(res, rej) {
-        var r = new FileReader();
-        r.onload = function(e) { res(e.target.result); };
-        r.onerror = function() { rej(new Error('Lecture échouée')); };
-        r.readAsDataURL(f);
+// ══════════════════════════════════════════════════════════════════
+// TRAITEMENT DES IMAGES
+// ══════════════════════════════════════════════════════════════════
+function fileToDataUri(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Erreur lecture'));
+        reader.readAsDataURL(file);
     });
 }
-
-function generateThumbnail(uri) {
-    return new Promise(function(res) {
-        var i = new Image();
-        i.onload = function() {
+function generateThumbnail(dataUri) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
             try {
-                var c = document.createElement('canvas');
-                var ratio = i.height / i.width;
-                c.width = THUMBNAIL_MAX_WIDTH;
-                c.height = Math.round(THUMBNAIL_MAX_WIDTH * ratio);
-                c.getContext('2d').drawImage(i, 0, 0, c.width, c.height);
-                res(c.toDataURL('image/jpeg', 0.7));
-            } catch (e) { res(uri); }
+                const canvas = document.createElement('canvas');
+                const ratio = img.height / img.width;
+                canvas.width = THUMBNAIL_MAX_WIDTH;
+                canvas.height = Math.round(THUMBNAIL_MAX_WIDTH * ratio);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            } catch (e) { resolve(dataUri); }
         };
-        i.onerror = function() { res(uri); };
-        i.src = uri;
+        img.onerror = () => resolve(dataUri);
+        img.src = dataUri;
     });
 }
-
-function processOneFile(f) {
-    if (!f.type || f.type.indexOf('image/') !== 0) return Promise.resolve(null);
-    if (f.size > MAX_IMAGE_SIZE) { log('Image trop lourde: ' + f.name); return Promise.resolve(null); }
-    return fileToDataUri(f).then(function(uri) {
-        return generateThumbnail(uri).then(function(thumb) {
-            return { dataUri: uri, thumbnail: thumb, id: Date.now() + Math.random() };
-        });
-    }).catch(function(e) { log('Erreur: ' + e.message); return null; });
+async function processOneFile(file) {
+    if (!file.type.startsWith('image/')) return null;
+    if (file.size > MAX_IMAGE_SIZE) { log('Image trop lourde ignorée : ' + file.name); return null; }
+    try {
+        const dataUri = await fileToDataUri(file);
+        const thumbnail = await generateThumbnail(dataUri);
+        return { file: file, dataUri: dataUri, thumbnail: thumbnail, id: Date.now() + Math.random() };
+    } catch (e) { log('Erreur traitement ' + file.name + ' : ' + e.message); return null; }
 }
-
-function handleFiles(files) {
-    var arr = Array.from(files).filter(function(f) { return f.type && f.type.indexOf('image/') === 0; });
-    if (!arr.length) return;
-    setStatus('Chargement de ' + arr.length + ' image(s)…');
-    var promises = arr.map(processOneFile);
-    Promise.all(promises).then(function(results) {
-        results.forEach(function(r) { if (r) state.images.push(r); });
+async function handleFiles(files) {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!imageFiles.length) return;
+    state.isLoadingImages = true; updateGenerateBtn();
+    setStatus('Chargement de ' + imageFiles.length + ' image' + (imageFiles.length > 1 ? 's' : '') + '…');
+    const uploadZone = document.getElementById('upload-zone');
+    uploadZone.classList.add('loading');
+    const BATCH = 5; let processed = 0;
+    for (let i = 0; i < imageFiles.length; i += BATCH) {
+        const batch = imageFiles.slice(i, i + BATCH);
+        const results = await Promise.allSettled(batch.map(f => processOneFile(f)));
+        for (const r of results) {
+            if (r.status === 'fulfilled' && r.value) { state.images.push(r.value); processed++; }
+        }
         renderImages();
-        setStatus(null);
-        updateGenerateBtn();
-        showToast(state.images.length + ' image(s) chargée(s)', 'success');
-    });
+        setStatus('Chargement des images… ' + processed + '/' + imageFiles.length);
+    }
+    state.isLoadingImages = false; uploadZone.classList.remove('loading');
+    setStatus(null); updateGenerateBtn();
 }
-
-function removeImage(id) {
-    state.images = state.images.filter(function(i) { return i.id !== id; });
-    renderImages();
-    updateGenerateBtn();
-}
-
+function removeImage(id) { state.images = state.images.filter(img => img.id !== id); renderImages(); }
 function renderImages() {
-    var grid = document.getElementById('images-grid');
-    if (!grid) return;
-    grid.innerHTML = state.images.map(function(img) {
+    const grid = document.getElementById('images-grid');
+    grid.innerHTML = state.images.map(img => {
         return '<div class="image-card">' +
-            '<img src="' + img.thumbnail + '" alt="">' +
+            '<img src="' + (img.thumbnail || img.dataUri) + '" alt="" loading="lazy">' +
             '<button class="remove-btn" data-remove="' + img.id + '">✕</button>' +
-        '</div>';
+            '</div>';
     }).join('');
-    grid.querySelectorAll('[data-remove]').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            removeImage(parseFloat(btn.dataset.remove));
-        });
+    grid.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); removeImage(parseFloat(btn.dataset.remove)); });
     });
 }
 
-// ═══════════════════════════════════════════════════════════
-// RENDU PRESETS & STYLES
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// RENDU — PRESETS
+// ══════════════════════════════════════════════════════════════════
 function renderPromptPresets() {
-    var container = document.getElementById('prompt-presets');
-    if (!container) return;
-    container.innerHTML = PROMPT_PRESETS.map(function(p, i) {
-        return '<div class="prompt-preset" data-preset="' + i + '">' + esc(p.label) + '</div>';
+    const container = document.getElementById('prompt-presets');
+    container.innerHTML = PROMPT_PRESETS.map((p, i) => {
+        const cls = p.psg ? 'prompt-preset psg' : 'prompt-preset';
+        return '<div class="' + cls + '" data-preset="' + i + '">' + esc(p.label) + '</div>';
     }).join('');
-    container.querySelectorAll('.prompt-preset').forEach(function(el) {
-        el.addEventListener('click', function() {
-            var idx = parseInt(el.dataset.preset, 10);
-            var preset = PROMPT_PRESETS[idx];
+
+    container.querySelectorAll('.prompt-preset').forEach(el => {
+        el.addEventListener('click', () => {
+            const idx = parseInt(el.dataset.preset, 10);
+            const preset = PROMPT_PRESETS[idx];
             if (!preset) return;
-            var ta = document.getElementById('main-prompt');
-            if (ta) {
-                ta.value = preset.text;
-                state.mainPrompt = preset.text;
-                showToast('Exemple appliqué', 'success');
+            const ta = document.getElementById('main-prompt');
+            ta.value = preset.text;
+            state.mainPrompt = preset.text;
+            if (preset.psg) {
+                state.psgContext = true;
+                state.selectedEffect = null;
+                renderStyles();
             }
+            ta.focus();
+            showToast(preset.psg ? 'Contexte PSG activé' : 'Exemple appliqué', 'success', 1200);
         });
     });
 }
 
 function renderStyles() {
-    var container = document.getElementById('styles-grid');
-    if (!container) return;
-    var html = '';
+    const container = document.getElementById('styles-grid');
+    let html = '';
+
     html += '<div class="no-style-card ' + (state.selectedEffect === null ? 'selected' : '') + '" data-effect="none">' +
-        (state.selectedEffect === null ? '✓ Aucun effet sélectionné' : '🚫 Aucun effet visuel') +
+        (state.selectedEffect === null
+            ? '✓ Aucun effet sélectionné — votre prompt seul gère les vidéos'
+            : '🚫 Aucun effet visuel (utiliser seulement mon prompt)') +
         '</div>';
 
-    html += '<div class="style-category-header">✨ Ambiance (préserve l\'image)</div>';
-    html += AMBIANCE_EFFECTS.map(function(s) {
-        return '<div class="style-card ' + (state.selectedEffect === s.id ? 'selected' : '') + '" data-effect="' + s.id + '">' +
+    // ── Catégorie PSG 2026/27 ─────────────────────────────────────
+    html += '<div class="style-category-header psg">🔴🔵 PSG 2026/27</div>';
+    html += '<div class="style-category-desc">Effets dédiés au Paris Saint-Germain — ambiance match, célébration, portrait officiel, ultras.</div>';
+    html += PSG_EFFECTS.map(s => {
+        return '<div class="style-card psg-card ' + (state.selectedEffect === s.id ? 'selected' : '') + '" data-effect="' + s.id + '">' +
             '<div class="style-emoji">' + s.emoji + '</div>' +
-            '<div><div class="style-name">' + esc(s.name) + '</div><div class="style-desc">' + esc(s.desc) + '</div></div>' +
+            '<div>' +
+                '<div class="style-name">' + esc(s.name) + '</div>' +
+                '<div class="style-desc">' + esc(s.desc) + '</div>' +
+            '</div>' +
         '</div>';
     }).join('');
 
-    html += '<div class="style-category-header">🎭 Transformations (radical)</div>';
-    html += STYLIZE_EFFECTS.map(function(s) {
+    // ── Effectif ──────────────────────────────────────────────────
+    html += '<div class="style-category-header">👥 Effectif 2026/27</div>';
+    html += '<div class="style-category-desc">Cliquez sur un joueur pour l\'ajouter au prompt comme contexte.</div>';
+    html += '<div style="grid-column:1/-1;" class="roster-list">';
+    PSG_ROSTER.gk.forEach(n => html += '<span class="roster-tag gk" data-player="' + esc(n) + '">🧤 ' + esc(n) + '</span>');
+    PSG_ROSTER.def.forEach(n => html += '<span class="roster-tag def" data-player="' + esc(n) + '">🛡️ ' + esc(n) + '</span>');
+    PSG_ROSTER.mid.forEach(n => html += '<span class="roster-tag mid" data-player="' + esc(n) + '">⚙️ ' + esc(n) + '</span>');
+    PSG_ROSTER.att.forEach(n => html += '<span class="roster-tag att" data-player="' + esc(n) + '">⚡ ' + esc(n) + '</span>');
+    html += '</div>';
+
+    // ── Ambiance ──────────────────────────────────────────────────
+    html += '<div class="style-category-header">✨ Effets d\'ambiance</div>';
+    html += '<div class="style-category-desc">Ces effets préservent votre image. Seule l\'ambiance change.</div>';
+    html += AMBIANCE_EFFECTS.map(s => {
         return '<div class="style-card ' + (state.selectedEffect === s.id ? 'selected' : '') + '" data-effect="' + s.id + '">' +
             '<div class="style-emoji">' + s.emoji + '</div>' +
-            '<div><div class="style-name">' + esc(s.name) + '</div><div class="style-desc">' + esc(s.desc) + '</div></div>' +
+            '<div>' +
+                '<div class="style-name">' + esc(s.name) + '</div>' +
+                '<div class="style-desc">' + esc(s.desc) + '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+
+    // ── Stylize ───────────────────────────────────────────────────
+    html += '<div class="style-category-header">🎭 Transformations stylistiques</div>';
+    html += '<div class="style-category-desc">Ces effets transforment radicalement votre image.</div>';
+    html += STYLIZE_EFFECTS.map(s => {
+        return '<div class="style-card ' + (state.selectedEffect === s.id ? 'selected' : '') + '" data-effect="' + s.id + '">' +
+            '<div class="style-emoji">' + s.emoji + '</div>' +
+            '<div>' +
+                '<div class="style-name">' + esc(s.name) + '</div>' +
+                '<div class="style-desc">' + esc(s.desc) + '</div>' +
+            '</div>' +
         '</div>';
     }).join('');
 
     container.innerHTML = html;
 
-    container.querySelectorAll('[data-effect]').forEach(function(el) {
-        el.addEventListener('click', function() {
-            var val = el.dataset.effect;
+    // Clic sur effet
+    container.querySelectorAll('[data-effect]').forEach(el => {
+        el.addEventListener('click', () => {
+            const val = el.dataset.effect;
             state.selectedEffect = (val === 'none') ? null : val;
+            state.psgContext = PSG_EFFECTS.some(s => s.id === val);
             renderStyles();
+            updateGenerateBtn();
+        });
+    });
+
+    // Clic sur joueur → ajoute au prompt
+    container.querySelectorAll('[data-player]').forEach(el => {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => {
+            const player = el.dataset.player;
+            const ta = document.getElementById('main-prompt');
+            const base = ta.value.trim();
+            const addition = 'Joueur du PSG : ' + player + '. ';
+            ta.value = base ? base + ' ' + addition : addition;
+            state.mainPrompt = ta.value;
+            state.psgContext = true;
+            showToast(player + ' ajouté au prompt', 'success', 1200);
+            updateGenerateBtn();
         });
     });
 }
 
-// ═══════════════════════════════════════════════════════════
-// PROMPT
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// CONSTRUCTION DU PROMPT
+// ══════════════════════════════════════════════════════════════════
 function buildPrompt() {
-    var allEffects = AMBIANCE_EFFECTS.concat(STYLIZE_EFFECTS);
-    var effect = state.selectedEffect ? allEffects.find(function(s) { return s.id === state.selectedEffect; }) : null;
-    var isStylize = effect && STYLIZE_EFFECTS.some(function(s) { return s.id === state.selectedEffect; });
-    var hasUserPrompt = state.mainPrompt && state.mainPrompt.trim().length > 0;
+    const allEffects = PSG_EFFECTS.concat(AMBIANCE_EFFECTS).concat(STYLIZE_EFFECTS);
+    const effect = state.selectedEffect ? allEffects.find(s => s.id === state.selectedEffect) : null;
 
-    var parts = [];
+    const isPSG = effect && PSG_EFFECTS.some(s => s.id === state.selectedEffect);
+    const isAmbiance = effect && AMBIANCE_EFFECTS.some(s => s.id === state.selectedEffect);
+    const isStylize = effect && STYLIZE_EFFECTS.some(s => s.id === state.selectedEffect);
+    const hasUserPrompt = state.mainPrompt && state.mainPrompt.trim().length > 0;
+
+    const parts = [];
 
     if (isStylize) {
         parts.push('Animate this image as the starting frame. Transform the entire image into the following artistic style:');
+    } else if (isPSG) {
+        parts.push(
+            'Animate this exact image as the starting frame, set in the world of Paris Saint-Germain football club (PSG). ' +
+            'The subject must remain IDENTICAL to the input image: same face, same expression, same identity. ' +
+            'Preserve the exact composition and framing. Add authentic PSG atmosphere: blue and red colors, Parisian stadium energy, professional football environment.'
+        );
     } else {
-        parts.push('Animate this exact image as the starting frame. The subject must remain IDENTICAL to the input image: same face, same expression, same clothing, same pose, same identity. This is a CONTINUATION of the source image. Preserve the exact composition and framing.');
+        parts.push(
+            'Animate this exact image as the starting frame. ' +
+            'The subject must remain IDENTICAL to the input image: same face, same expression, same clothing, same pose, same identity. ' +
+            'This is a CONTINUATION of the source image, not a re-imagination. ' +
+            'Preserve the exact composition, framing, and layout of the original image. ' +
+            'The camera does NOT change the subject. Only subtle motion, breathing, light, and atmosphere are animated.'
+        );
     }
 
-    if (effect) parts.push(effect.prompt);
-    if (hasUserPrompt) parts.push('Artistic direction: ' + state.mainPrompt.trim());
+    if (effect) {
+        parts.push(effect.prompt);
+        if (isStylize) parts.push('Maintain the same subject, pose, and composition as the source image, but reinterpret everything in this new style.');
+    }
+
+    if (hasUserPrompt) {
+        if (isStylize) parts.push('Additional artistic direction (applied on top of the style): ' + state.mainPrompt.trim());
+        else parts.push('Artistic direction (highest priority, must not change the subject identity or composition): ' + state.mainPrompt.trim());
+    }
+
     if (state.framing !== 'random' && FRAMING_PRESETS[state.framing]) parts.push(FRAMING_PRESETS[state.framing]);
     if (state.intensity !== 'random' && INTENSITY_PRESETS[state.intensity]) parts.push(INTENSITY_PRESETS[state.intensity]);
-    else parts.push('moderate movement, controlled motion');
+    else parts.push('moderate movement, clear but controlled motion');
 
     parts.push(randomItem(RANDOM_ACTIONS));
     parts.push(randomItem(RANDOM_CAMERA));
     parts.push(randomItem(RANDOM_LIGHTING));
-    parts.push('Portrait orientation 9:16 vertical, 24fps, no text, no subtitles, no watermarks');
+    parts.push('Sound design: minimal foley, soft ambient textures, no music, no instruments, no dialogue');
+    parts.push('Portrait orientation 9:16 vertical, 24fps, no text, no subtitles, no watermarks, consistent character design with the source image');
 
     return parts.join('. ');
 }
 
-// ═══════════════════════════════════════════════════════════
-// API
-// ═══════════════════════════════════════════════════════════
-function apiFetch(url, options, label) {
-    options = options || {};
-    label = label || 'API';
-    var attempt = 0;
-
-    function tryFetch() {
-        if (state.stopRequested) return Promise.reject(new Error('Arrêt demandé'));
-        return fetch(url, options).then(function(res) {
+// ══════════════════════════════════════════════════════════════════
+// API AGNES
+// ══════════════════════════════════════════════════════════════════
+async function apiFetch(url, options = {}, label = 'API') {
+    for (let attempt = 0; attempt < 7; attempt++) {
+        if (state.stopRequested) throw new Error('Arrêt demandé');
+        try {
+            const res = await fetch(url, options);
             if (res.status === 429) {
-                var wait = [15, 30, 45, 60, 90, 120, 180][Math.min(attempt, 6)];
+                state.creationAttemptsSinceLastError = 0;
+                if (createIntervalMs < CREATE_INTERVAL_SAFE) {
+                    createIntervalMs = Math.min(createIntervalMs + 8000, CREATE_INTERVAL_MAX);
+                    log('429 détecté → intervalle porté à ' + (createIntervalMs / 1000) + 's');
+                }
+                const wait = [15, 30, 45, 60, 90, 120, 180][Math.min(attempt, 6)];
                 log(label + ' : 429, attente ' + wait + 's');
-                setStatus('Préparation… (' + wait + 's)');
-                attempt++;
-                return sleep(wait * 1000).then(tryFetch);
+                setStatus('L\'intelligence artificielle se prépare… (' + wait + 's)');
+                await sleep(wait * 1000); continue;
             }
             if (res.status === 503) {
-                var w2 = [5, 10, 15, 20, 30, 45][Math.min(attempt, 5)];
-                log(label + ' : 503, attente ' + w2 + 's');
-                setStatus('En cours… (' + w2 + 's)');
-                attempt++;
-                return sleep(w2 * 1000).then(tryFetch);
+                const wait = [5, 10, 15, 20, 30, 45][Math.min(attempt, 5)];
+                log(label + ' : 503, attente ' + wait + 's');
+                setStatus('Votre vidéo se prépare… (' + wait + 's)');
+                await sleep(wait * 1000); continue;
+            }
+            if (res.ok && createIntervalMs > CREATE_INTERVAL_MIN) {
+                state.creationAttemptsSinceLastError++;
+                if (state.creationAttemptsSinceLastError >= 3) {
+                    createIntervalMs = Math.max(createIntervalMs - 4000, CREATE_INTERVAL_MIN);
+                    state.creationAttemptsSinceLastError = 0;
+                    log('3 succès consécutifs → intervalle ramené à ' + (createIntervalMs / 1000) + 's');
+                }
             }
             return res;
-        }).catch(function(e) {
+        } catch (e) {
             if (e.message === 'Arrêt demandé') throw e;
-            if (attempt >= 5) throw e;
-            var w3 = [3, 5, 8, 12, 20][Math.min(attempt, 4)];
-            log(label + ' : réseau, retry ' + w3 + 's');
-            attempt++;
-            return sleep(w3 * 1000).then(tryFetch);
-        });
-    }
-    return tryFetch();
-}
-
-function createVideoTask(imageDataUri, prompt) {
-    var body = {
-        model: MODEL_VIDEO,
-        prompt: prompt,
-        image: imageDataUri,
-        num_frames: state.durationFrames,
-        frame_rate: FRAME_RATE
-    };
-    return apiFetch(API_BASE + '/videos', {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + getApiKey(),
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-    }, 'Création').then(function(res) {
-        if (!res.ok) {
-            return res.text().then(function(err) {
-                throw new Error('HTTP ' + res.status + ' — ' + err.slice(0, 200));
-            });
+            const wait = [3, 5, 8, 12, 20, 30][Math.min(attempt, 5)];
+            log(label + ' : réseau, retry ' + wait + 's');
+            setStatus('Connexion en cours… (' + wait + 's)');
+            await sleep(wait * 1000);
         }
-        return res.json().then(function(data) {
-            var videoId = data.video_id || data.id || data.task_id;
-            if (!videoId) throw new Error('Pas de video_id retourné');
-            return videoId;
-        });
-    });
-}
-
-function pollVideo(videoId, onProgress) {
-    var attempt = 0;
-
-    function nextPoll() {
-        if (state.stopRequested) return Promise.reject(new Error('Arrêt demandé'));
-        if (attempt >= MAX_POLL_ATTEMPTS) return Promise.reject(new Error('Timeout'));
-
-        var url = POLL_BASE + '?video_id=' + encodeURIComponent(videoId) + '&model_name=' + encodeURIComponent(MODEL_VIDEO);
-
-        return apiFetch(url, {
-            method: 'GET',
-            headers: { 'Authorization': 'Bearer ' + getApiKey() }
-        }, 'Polling').then(function(res) {
-            return res.json();
-        }).then(function(d) {
-            var status = d.status || 'unknown';
-            var progress = d.progress || 0;
-            onProgress('Création… ' + progress + '%');
-
-            if (status === 'completed' || status === 'succeeded' || status === 'done') {
-                var videoUrl = (d.metadata && d.metadata.url) || d.url || (d.output && d.output.url);
-                if (!videoUrl) throw new Error('Terminé mais pas d\'URL');
-                return videoUrl;
-            }
-            if (status === 'failed' || status === 'error' || status === 'cancelled') {
-                throw new Error('Échec (' + status + ')');
-            }
-
-            attempt++;
-            var r = POLL_INTERVAL_SEC;
-            return sleep(r * 1000).then(nextPoll);
-        });
     }
-    return nextPoll();
+    return fetch(url, options);
 }
 
-// ═══════════════════════════════════════════════════════════
-// QUEUE
-// ═══════════════════════════════════════════════════════════
+async function createVideoTask(imageDataUri, prompt) {
+    const body = { model: MODEL_VIDEO, prompt: prompt, image: imageDataUri, num_frames: state.durationFrames, frame_rate: FRAME_RATE };
+    const res = await apiFetch(API_BASE + '/videos', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + getApiKey(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }, 'Création');
+    if (!res.ok) { const err = await res.text(); throw new Error('HTTP ' + res.status + ' — ' + err.slice(0, 200)); }
+    const data = await res.json();
+    const videoId = data.video_id || data.id || data.task_id;
+    if (!videoId) throw new Error('Pas de video_id retourné');
+    return videoId;
+}
+
+async function pollVideo(videoId, onProgress) {
+    const estimatedMs = estimateGenerationTime(state.durationFrames);
+    const estimatedSec = estimatedMs / 1000;
+    let remaining = Math.max(20, Math.floor(estimatedSec * 0.8));
+    while (remaining > 0) {
+        if (state.stopRequested) throw new Error('Arrêt demandé');
+        onProgress('Votre vidéo se prépare… — ' + remaining + 's');
+        await sleep(1000); remaining--;
+    }
+    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+        if (state.stopRequested) throw new Error('Arrêt demandé');
+        if (attempt > 0) {
+            let r = POLL_INTERVAL_SEC;
+            while (r > 0) {
+                if (state.stopRequested) throw new Error('Arrêt demandé');
+                onProgress('L\'image prend vie… — ' + r + 's');
+                await sleep(1000); r--;
+            }
+        }
+        const url = POLL_BASE + '?video_id=' + encodeURIComponent(videoId) + '&model_name=' + encodeURIComponent(MODEL_VIDEO);
+        const res = await apiFetch(url, { method: 'GET', headers: { 'Authorization': 'Bearer ' + getApiKey() } }, 'Polling');
+        const d = await res.json();
+        const status = d.status || 'unknown';
+        const progress = d.progress || 0;
+        onProgress('Création en cours… — ' + progress + '%');
+        if (status === 'completed' || status === 'succeeded' || status === 'done') {
+            const videoUrl = (d.metadata && d.metadata.url) || d.url || (d.output && d.output.url);
+            if (!videoUrl) throw new Error('Terminé mais pas d\'URL');
+            return videoUrl;
+        }
+        if (status === 'failed' || status === 'error' || status === 'cancelled') throw new Error('Échec (' + status + ')');
+    }
+    throw new Error('Délai maximal dépassé');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FILE D'ATTENTE
+// ══════════════════════════════════════════════════════════════════
 function renderQueue() {
-    var queueEl = document.getElementById('queue');
-    if (!queueEl) return;
-    if (!state.queue.length) { queueEl.innerHTML = ''; return; }
+    const queueEl = document.getElementById('queue');
+    if (!state.queue.length) { queueEl.style.display = 'none'; return; }
+    queueEl.style.display = 'block';
+    const total = state.queue.length;
+    const done = state.completed + state.failed;
+    const inProgress = state.queue.filter(q => q.status === 'processing').length;
+    const pending = total - done - inProgress;
+    const estGen = estimateGenerationTime(state.durationFrames) / 1000;
+    const remainingCreates = pending;
+    const eta = remainingCreates > 0
+        ? (remainingCreates * (createIntervalMs / 1000)) + estGen
+        : (inProgress * estGen / Math.max(inProgress, 1));
 
-    var total = state.queue.length;
-    var done = state.completed + state.failed;
+    let html = '<div class="queue-summary">' +
+        '<span class="progress-text">Progression : ' + done + '/' + total + '</span>' +
+        '<span class="eta-text">' + (done < total ? '≈ ' + formatEta(eta) + ' restant' : 'Terminé') + '</span>' +
+        '</div>';
 
-    var html = '<div class="queue-summary"><span>Progression : ' + done + '/' + total + '</span><span>' + (done < total ? 'en cours' : 'terminé') + '</span></div>';
+    const visible = state.queue.slice(0, MAX_VISIBLE_QUEUE);
+    const hidden = state.queue.length - visible.length;
 
-    html += state.queue.map(function(item) {
-        var icon = '○', statusText = 'En attente', cls = 'pending';
-        if (item.status === 'processing') { icon = '◐'; statusText = item.progress || 'En cours'; cls = 'processing'; }
+    html += visible.map(item => {
+        let icon = '○', statusText = 'En file d\'attente', cls = 'pending';
+        if (item.status === 'creating') { icon = '◐'; statusText = 'Préparation…'; cls = 'creating'; }
+        else if (item.status === 'processing') { icon = '◐'; statusText = item.progress || 'En cours…'; cls = 'processing'; }
         else if (item.status === 'done') { icon = '●'; statusText = 'Terminé'; cls = 'done'; }
-        else if (item.status === 'failed') { icon = '✕'; statusText = item.progress || 'Échec'; cls = 'failed'; }
-
+        else if (item.status === 'failed') { icon = '✕'; statusText = 'Échec'; cls = 'failed'; }
         return '<div class="queue-item ' + cls + '">' +
             '<div class="q-icon">' + icon + '</div>' +
             '<div class="q-name">Image ' + (item.imageIndex + 1) + '</div>' +
@@ -882,248 +1376,189 @@ function renderQueue() {
         '</div>';
     }).join('');
 
+    if (hidden > 0) html += '<div class="queue-more">… et ' + hidden + ' autre' + (hidden > 1 ? 's' : '') + '</div>';
     queueEl.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════════════════
-// GALLERY
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// GALERIE
+// ══════════════════════════════════════════════════════════════════
 function addToGallery(videoUrl, label) {
-    var galleryGrid = document.getElementById('gallery-grid');
-    if (!galleryGrid) return;
-    var el = document.createElement('div');
+    const galleryEl = document.getElementById('gallery');
+    const galleryGrid = document.getElementById('gallery-grid');
+    galleryEl.style.display = 'block';
+    const el = document.createElement('div');
     el.className = 'gallery-item';
-    el.innerHTML = '<video controls preload="metadata" muted playsinline><source src="' + videoUrl + '" type="video/mp4"></video>';
+    el.innerHTML = '<video controls preload="metadata" muted playsinline>' +
+        '<source src="' + videoUrl + '" type="video/mp4">' +
+        '</video>' +
+        '<div class="g-caption">' + esc(label) + '</div>';
     galleryGrid.appendChild(el);
 }
 
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // PIPELINE
-// ═══════════════════════════════════════════════════════════
-function processOne(item) {
-    item.status = 'processing';
-    item.progress = 'Préparation…';
-    renderQueue();
-
-    var prompt = buildPrompt();
+// ══════════════════════════════════════════════════════════════════
+async function createTaskOnly(item) {
+    item.status = 'creating'; item.progress = 'Préparation…'; renderQueue();
+    const prompt = buildPrompt(); item.prompt = prompt;
     log('[Image ' + (item.imageIndex + 1) + '] Création…');
-
-    return createVideoTask(item.image.dataUri, prompt).then(function(videoId) {
-        item.videoId = videoId;
-        log('[Image ' + (item.imageIndex + 1) + '] Tâche créée : ' + String(videoId).slice(0, 30));
-        return pollVideo(videoId, function(prog) {
-            item.progress = prog;
-            renderQueue();
-        });
-    }).then(function(videoUrl) {
-        item.status = 'done';
-        item.progress = 'Terminé';
-        state.completed++;
-        renderQueue();
-        updateGenerateBtn();
-        addToGallery(videoUrl, 'Image ' + (item.imageIndex + 1));
-        log('[Image ' + (item.imageIndex + 1) + '] Terminée');
-    }).catch(function(e) {
-        if (e.message === 'Arrêt demandé') {
-            item.status = 'failed';
-            item.progress = 'Arrêté';
-        } else {
-            log('[Image ' + (item.imageIndex + 1) + '] Erreur: ' + e.message);
-            item.status = 'failed';
-            item.progress = 'Échec';
-            state.failed++;
-        }
-        renderQueue();
-        updateGenerateBtn();
-    });
+    const videoId = await createVideoTask(item.image.dataUri, prompt);
+    item.videoId = videoId; item.startTime = Date.now();
+    item.status = 'processing'; item.progress = 'En cours…'; renderQueue();
+    log('[Image ' + (item.imageIndex + 1) + '] Tâche créée : ' + String(videoId).slice(0, 30) + '…');
+    return videoId;
 }
 
-// ═══════════════════════════════════════════════════════════
-// GÉNÉRATION PRINCIPALE
-// ═══════════════════════════════════════════════════════════
-function startGeneration() {
+async function pollTaskAndDisplay(item) {
+    try {
+        const videoUrl = await pollVideo(item.videoId, (prog) => {
+            item.progress = prog; renderQueue();
+        });
+        const elapsed = Date.now() - item.startTime;
+        recordGenerationTime(state.durationFrames, elapsed);
+        log('[Image ' + (item.imageIndex + 1) + '] Terminée en ' + (elapsed / 1000).toFixed(1) + 's');
+        item.status = 'done'; item.videoUrl = videoUrl; item.progress = 'Terminé';
+        state.completed++; renderQueue(); updateGenerateBtn();
+        addToGallery(videoUrl, 'Image ' + (item.imageIndex + 1));
+    } catch (e) {
+        if (e.message === 'Arrêt demandé') { item.status = 'failed'; item.progress = 'Arrêté'; }
+        else {
+            log('[Image ' + (item.imageIndex + 1) + '] ' + e.message);
+            item.status = 'failed'; item.progress = 'Échec'; state.failed++;
+        }
+        renderQueue(); updateGenerateBtn();
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WORKFLOW PRINCIPAL
+// ══════════════════════════════════════════════════════════════════
+async function startGeneration() {
     if (state.isRunning || !state.images.length) return;
-    if (!getApiKey()) {
-        showToast('Ajoutez d\'abord votre clé API', 'error');
-        return;
+    if (!getApiKey()) { showToast('Ajoutez d\'abord votre clé API', 'error'); document.getElementById('api-key-input').focus(); return; }
+
+    state.mainPrompt = document.getElementById('main-prompt').value.trim();
+    if (!state.mainPrompt && !state.selectedEffect) {
+        if (!confirm('Ni prompt ni effet sélectionné. Continuer avec un style aléatoire ?')) return;
     }
 
-    var mainPromptEl = document.getElementById('main-prompt');
-    state.mainPrompt = mainPromptEl ? mainPromptEl.value.trim() : '';
+    state.isRunning = true; state.stopRequested = false;
+    state.completed = 0; state.failed = 0; state.creationAttemptsSinceLastError = 0;
+    createIntervalMs = CREATE_INTERVAL_MIN;
 
-    state.isRunning = true;
-    state.stopRequested = false;
-    state.completed = 0;
-    state.failed = 0;
+    state.queue = state.images.map((img, i) => ({
+        imageIndex: i, image: img, status: 'pending', progress: null,
+        videoId: null, videoUrl: null, prompt: null, startTime: null
+    }));
 
-    state.queue = state.images.map(function(img, i) {
-        return {
-            imageIndex: i,
-            image: img,
-            status: 'pending',
-            progress: null,
-            videoId: null,
-            videoUrl: null
-        };
-    });
+    document.getElementById('gallery-grid').innerHTML = '';
+    document.getElementById('gallery').style.display = 'none';
+    document.getElementById('stop-btn').classList.add('visible');
+    document.getElementById('generate-btn').disabled = true;
 
-    var galleryGrid = document.getElementById('gallery-grid');
-    if (galleryGrid) galleryGrid.innerHTML = '';
-
-    var stopBtn = document.getElementById('stop-btn');
-    if (stopBtn) stopBtn.classList.add('visible');
-
-    updateGenerateBtn();
-    renderQueue();
-    setStatus('Démarrage…');
+    await ensureWakeLockActive();
+    renderQueue(); updateGenerateBtn();
 
     log('Démarrage — ' + state.images.length + ' vidéos');
-    var totalStart = Date.now();
-    var tasks = [];
+    log('Prompt principal : ' + (state.mainPrompt ? '"' + state.mainPrompt.slice(0, 60) + '…"' : '(vide)'));
+    log('Effet : ' + (state.selectedEffect || 'aucun') + (state.psgContext ? ' (PSG)' : ''));
 
-    // Séquence : une image à la fois, avec pause entre chaque
-    var idx = 0;
-    function nextImage() {
-        if (state.stopRequested || idx >= state.queue.length) return Promise.resolve();
-        var item = state.queue[idx];
-        var p = processOne(item).then(function() {
-            idx++;
-            if (idx < state.queue.length && !state.stopRequested) {
-                // Pause de 15s entre les créations pour éviter le rate limit
-                setStatus('Pause avant image ' + (idx + 1) + '…');
-                return sleep(15000).then(nextImage);
+    const totalStart = Date.now();
+    const pollingTasks = [];
+
+    try {
+        for (let i = 0; i < state.queue.length; i++) {
+            if (state.stopRequested) break;
+            const item = state.queue[i];
+            try {
+                await createTaskOnly(item);
+                pollingTasks.push(pollTaskAndDisplay(item));
+            } catch (e) {
+                if (e.message === 'Arrêt demandé') break;
+                log('[Image ' + (i + 1) + '] Échec création : ' + e.message);
+                item.status = 'failed'; item.progress = 'Échec'; state.failed++;
+                renderQueue(); updateGenerateBtn();
             }
-        });
-        return p;
-    }
+            if (i < state.queue.length - 1 && !state.stopRequested) {
+                const waitSec = Math.ceil(createIntervalMs / 1000);
+                for (let r = waitSec; r > 0; r--) {
+                    if (state.stopRequested) break;
+                    const nextNum = i + 2;
+                    setStatus('Respiration créative… — Image ' + nextNum + '/' + state.queue.length + ' dans ' + r + 's');
+                    await sleep(1000);
+                }
+            }
+        }
+        if (pollingTasks.length > 0) { setStatus('Finalisation…'); await Promise.allSettled(pollingTasks); }
+    } catch (e) { log('Erreur globale : ' + e.message); }
 
-    nextImage().then(function() {
-        var elapsed = (Date.now() - totalStart) / 1000;
-        var summary = state.stopRequested
-            ? 'Arrêté — ' + state.completed + '/' + state.queue.length
-            : '✦ ' + state.completed + '/' + state.queue.length + ' vidéos créées ✦';
+    const totalElapsed = (Date.now() - totalStart) / 1000;
+    const summary = state.stopRequested
+        ? 'Arrêté — ' + state.completed + '/' + state.queue.length + ' vidéos'
+        : '✦ ' + state.completed + '/' + state.queue.length + ' vidéos créées en ' + formatEta(totalElapsed) + ' ✦';
 
-        log(summary);
-        setStatus(summary);
-
-        setTimeout(function() {
-            setStatus(null);
-            state.isRunning = false;
-            state.stopRequested = false;
-            var sb = document.getElementById('stop-btn');
-            if (sb) sb.classList.remove('visible');
-            updateGenerateBtn();
-            showToast(state.completed + ' vidéo(s) créée(s)', 'success');
-        }, 4000);
-    });
+    log(summary); setStatus(summary); await sleep(4000); setStatus(null);
+    state.isRunning = false; state.stopRequested = false;
+    document.getElementById('stop-btn').classList.remove('visible');
+    updateGenerateBtn();
+    showToast(state.completed + ' vidéo' + (state.completed > 1 ? 's' : '') + ' créée' + (state.completed > 1 ? 's' : ''), 'success');
 }
 
 function stopGeneration() {
     if (!state.isRunning) return;
     state.stopRequested = true;
-    log('Arrêt demandé');
+    log('Arrêt demandé par l\'utilisateur');
     setStatus('Arrêt en cours…');
 }
 
-// ═══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 // INITIALISATION
-// ═══════════════════════════════════════════════════════════
-function bindAll() {
-    log('=== Binding events ===');
+// ══════════════════════════════════════════════════════════════════
+(function init() {
+    const saveBtn = document.getElementById('api-save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', saveApiKey);
 
-    // Bouton Enregistrer la clé
-    var saveBtn = document.getElementById('api-save-btn');
-    if (saveBtn) {
-        var handler = function(e) {
-            if (e) { e.preventDefault(); e.stopPropagation(); }
-            log('Bouton Enregistrer cliqué');
-            saveApiKey();
-        };
-        saveBtn.addEventListener('click', handler);
-        saveBtn.addEventListener('touchend', handler, { passive: false });
-        log('✓ Bouton Enregistrer attaché');
-    } else {
-        log('✗ Bouton Enregistrer INTROUVABLE');
-    }
+    const stopBtn = document.getElementById('stop-btn');
+    if (stopBtn) stopBtn.addEventListener('click', stopGeneration);
 
-    // Bouton Arrêter
-    var stopBtn = document.getElementById('stop-btn');
-    if (stopBtn) {
-        stopBtn.addEventListener('click', function(e) { e.preventDefault(); stopGeneration(); });
-    }
+    const apiInput = document.getElementById('api-key-input');
+    if (apiInput) apiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveApiKey(); } });
 
-    // Entrée dans le champ API
-    var apiInput = document.getElementById('api-key-input');
-    if (apiInput) {
-        apiInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); saveApiKey(); }
-        });
-    }
-
-    // Sections collapsibles
-    document.querySelectorAll('[data-toggle]').forEach(function(header) {
-        header.addEventListener('click', function() {
-            var target = document.getElementById(header.dataset.toggle);
-            if (target) target.classList.toggle('open');
-        });
+    document.querySelectorAll('[data-toggle]').forEach(header => {
+        header.addEventListener('click', () => { document.getElementById(header.dataset.toggle).classList.toggle('open'); });
     });
 
-    // Upload
-    var uploadZone = document.getElementById('upload-zone');
-    var fileInput = document.getElementById('file-input');
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
     if (uploadZone && fileInput) {
-        uploadZone.addEventListener('click', function() { fileInput.click(); });
-        fileInput.addEventListener('change', function(e) {
-            handleFiles(e.target.files);
-            fileInput.value = '';
-        });
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
     }
 
-    // Prompt
-    var mainPrompt = document.getElementById('main-prompt');
-    if (mainPrompt) {
-        mainPrompt.addEventListener('input', function(e) {
-            state.mainPrompt = e.target.value;
-        });
-    }
+    const mainPrompt = document.getElementById('main-prompt');
+    if (mainPrompt) mainPrompt.addEventListener('input', e => { state.mainPrompt = e.target.value; });
 
-    // Sélecteurs
-    var durationSelect = document.getElementById('duration-select');
-    if (durationSelect) {
-        durationSelect.addEventListener('change', function(e) {
-            state.durationFrames = parseInt(e.target.value, 10);
-        });
-    }
-    var framingSelect = document.getElementById('framing-select');
-    if (framingSelect) {
-        framingSelect.addEventListener('change', function(e) { state.framing = e.target.value; });
-    }
-    var intensitySelect = document.getElementById('intensity-select');
-    if (intensitySelect) {
-        intensitySelect.addEventListener('change', function(e) { state.intensity = e.target.value; });
-    }
+    const durationSelect = document.getElementById('duration-select');
+    if (durationSelect) durationSelect.addEventListener('change', e => { state.durationFrames = parseInt(e.target.value, 10); });
+    const framingSelect = document.getElementById('framing-select');
+    if (framingSelect) framingSelect.addEventListener('change', e => { state.framing = e.target.value; });
+    const intensitySelect = document.getElementById('intensity-select');
+    if (intensitySelect) intensitySelect.addEventListener('change', e => { state.intensity = e.target.value; });
 
-    // Bouton Générer
-    var generateBtn = document.getElementById('generate-btn');
-    if (generateBtn) {
-        generateBtn.addEventListener('click', function(e) { e.preventDefault(); startGeneration(); });
-    }
+    const generateBtn = document.getElementById('generate-btn');
+    if (generateBtn) generateBtn.addEventListener('click', startGeneration);
 
-    // Rendu initial
-    updateApiPanel();
-    renderPromptPresets();
-    renderStyles();
-    renderImages();
-    renderQueue();
+    const wakeBtn = document.getElementById('wake-toggle-btn');
+    if (wakeBtn) wakeBtn.addEventListener('click', toggleWakeLock);
 
-    log('=== Prêt ===');
-}
+    try { wakeLockEnabled = localStorage.getItem(WAKE_LOCK_PREF) === '1'; } catch (e) {}
+    if (wakeLockEnabled) activateWakeLock().then(() => updateWakeStatus());
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindAll);
-} else {
-    bindAll();
-}
+    updateApiPanel(); updateTimingDisplay(); updateWakeStatus();
+    renderPromptPresets(); renderStyles(); renderImages(); renderQueue();
+    log('Prêt — Atelier Vidéo PSG 2026/27.');
+})();
 </script>
 
 </body>
